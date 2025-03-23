@@ -33,7 +33,7 @@ class BookingState(StatesGroup):
 @dp.message(Command("start"))
 async def start_command(message: Message):
     text = (
-        "Привет! Я бот для бронирования залов, оборудования и парковок.\n\n"
+        "Привет! Я бот Innodom.\n\n"
         "Доступные команды:\n"
         "/spaces - список залов\n"
         "/equipments - список оборудования\n"
