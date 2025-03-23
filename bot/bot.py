@@ -8,7 +8,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 import asyncio
 from aiogram import types
-
+from datetime import datetime
 
 # Настройки бота и API
 API_TOKEN = '7858593332:AAGhwrIZJsh3ZkhkfgLZ39Sh1GEG2RhpW80'
@@ -204,6 +204,16 @@ async def list_parkings(message: Message):
                 await message.answer("Ошибка при получении данных о парковках.")
 
 
+from datetime import datetime
+import pytz
+
+# Функция для перевода offset-naive datetime в offset-aware
+def make_aware(datetime_obj, timezone='UTC'):
+    if datetime_obj.tzinfo is None:  # Если tzinfo отсутствует, добавляем
+        tz = pytz.timezone(timezone)
+        return tz.localize(datetime_obj)
+    return datetime_obj
+
 # ================= Команда /book =================
 @dp.message(Command("book"))
 async def start_booking(message: Message, state: FSMContext):
@@ -275,15 +285,30 @@ async def process_booking_date(message: Message, state: FSMContext):
 async def process_booking_end_date(message: Message, state: FSMContext):
     await state.update_data(end_date=message.text)
 
-    # Проверка доступности зала
+    # Получаем данные из состояния FSM
     data = await state.get_data()
+
+    # Проверяем формат введённых дат
+    try:
+        # Используем make_aware для обработки дат
+        start_date = make_aware(datetime.fromisoformat(data["date"]), timezone='Europe/Minsk')  # Исправление здесь
+        end_date = make_aware(datetime.fromisoformat(data["end_date"]), timezone='Europe/Minsk')  # Исправление здесь
+    except ValueError:
+        await message.answer("Некорректный формат даты. Убедитесь, что используете формат ГГГГ-ММ-ДД ЧЧ:ММ.")
+        await state.clear()  # Очистка состояния при некорректном вводе
+        return
+
+    # Формируем payload для API
     booking_payload = {
         "space": data["space_id"],
         "user_name": data["user_name"],
         "user_contact": data["user_contact"],
-        "date": data["date"],
-        "end_date": data["end_date"]
+        "date": start_date.isoformat(),
+        "end_date": end_date.isoformat()
     }
+
+    # Логирование для отладки
+    logging.info(f"Payload бронирования: {booking_payload}")
 
     async with aiohttp.ClientSession() as session:
         try:
@@ -291,36 +316,33 @@ async def process_booking_end_date(message: Message, state: FSMContext):
             async with session.get(DJANGO_API_BASE_URL + "bookings/") as response:
                 if response.status == 200:
                     bookings = await response.json()
+                    logging.info(f"Все бронирования: {bookings}")
                     conflicts = [
                         booking for booking in bookings
-                        if booking["space"] == booking_payload["space"] and
+                        if int(booking["space"]) == int(booking_payload["space"]) and
                         not (
-                            booking_payload["end_date"] <= booking["date"] or
-                            booking_payload["date"] >= booking["end_date"]
+                            make_aware(datetime.fromisoformat(booking_payload["end_date"]), timezone='Europe/Minsk') <= make_aware(datetime.fromisoformat(booking["date"]), timezone='Europe/Minsk') or
+                            make_aware(datetime.fromisoformat(booking_payload["date"]), timezone='Europe/Minsk') >= make_aware(datetime.fromisoformat(booking["end_date"]), timezone='Europe/Minsk')
                         )
                     ]
-
                     if conflicts:
-                        await message.answer(
-                            "Выбранное время уже занято. Попробуйте указать другой промежуток."
-                        )
+                        await message.answer("Выбранное время уже занято. Попробуйте указать другой промежуток.")
                         return
 
-            # Создаём бронирование, если нет конфликтов
-            async with session.post(DJANGO_API_BASE_URL + "bookings/", json=booking_payload) as response_post:
+            # Создаём бронирование
+            async with session.post(DJANGO_API_BASE_URL + "bookings/create/", json=booking_payload) as response_post:
                 if response_post.status in (200, 201):
                     await message.answer("Бронирование успешно создано!")
                 else:
                     error_text = await response_post.text()
-                    await message.answer(f"Ошибка при создании бронирования: {error_text}")
-
+                    logging.error(f"Ошибка API: {error_text}")
+                    await message.answer(f"Не удалось создать бронирование. Ответ сервера: {error_text}")
         except Exception as e:
             logging.error(f"Ошибка при проверке доступности: {e}")
             await message.answer("Произошла ошибка при проверке доступности зала.")
-
-    await state.clear()
-
-
+        finally:
+            # Выполняется вне зависимости от успеха выполнения
+            await state.clear()
 
 # ================= Запуск бота =================
 async def main():

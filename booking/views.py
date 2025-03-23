@@ -22,8 +22,6 @@ class SpaceListView(APIView):
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 class BookingCreateView(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
     def post(self, request, *args, **kwargs):
         try:
             serializer = BookingSerializer(data=request.data)
@@ -33,6 +31,9 @@ class BookingCreateView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get(self, request, *args, **kwargs):
+        return Response({"message": "Метод GET не поддерживается для создания бронирований."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class EquipmentListView(APIView):
