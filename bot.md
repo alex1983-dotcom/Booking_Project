@@ -1,352 +1,99 @@
 import logging
-import aiohttp
-from aiogram import Bot, Dispatcher
-from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.filters import Command
+from aiogram import Bot, Dispatcher, Router, types
+from aiohttp import ClientSession
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.filters import Command
 import asyncio
-from aiogram import types
-from datetime import datetime
 
-# Настройки бота и API
-API_TOKEN = '7858593332:AAGhwrIZJsh3ZkhkfgLZ39Sh1GEG2RhpW80'
-DJANGO_API_BASE_URL = "http://127.0.0.1:8000/booking/api/"
+# Настройка логов
 logging.basicConfig(level=logging.INFO)
 
+# Базовый URL для взаимодействия с Django API
+DJANGO_API_BASE_URL = "http://127.0.0.1:8000/booking/api/"
+
 # Инициализация бота
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher(storage=MemoryStorage())
+bot = Bot(token="7858593332:AAGhwrIZJsh3ZkhkfgLZ39Sh1GEG2RhpW80")
 
+# Инициализация хранилища состояний и диспетчера
+storage = MemoryStorage()
+dp = Dispatcher(storage=storage)
 
-# ================= FSM для процесса бронирования =================
+# Создание роутера для регистрации обработчиков
+router = Router()
+
+# Класс состояний для FSM
 class BookingState(StatesGroup):
-    waiting_for_space = State()
-    waiting_for_name = State()
-    waiting_for_contact = State()
-    waiting_for_date = State()
-    waiting_for_end_date = State()
+    date = State()
+    space = State()
+    preferences = State()
 
+@router.message(Command(commands=['start']))
+async def start(message: types.Message, state: FSMContext):
+    """
+    Обработчик команды /start.
+    Запуск диалога для бронирования.
+    """
+    await message.reply("Привет! Укажите дату для бронирования:")
+    await state.set_state(BookingState.date)
 
-# ================= Команда /start =================
-@dp.message(Command("start"))
-async def start_command(message: Message):
-    text = (
-        "Привет! Я бот Innodom.\n\n"
-        "Доступные команды:\n"
-        "/spaces - список залов\n"
-        "/equipments - список оборудования\n"
-        "/parking - список парковок\n"
-        "/book - создать бронирование"
-    )
-    await message.answer(text)
-
-
-# ================= Команда /spaces =================
-@dp.message(Command("spaces"))
-async def list_spaces(message: Message):
-    async with aiohttp.ClientSession() as session:
-        try:
-            # Запрашиваем список залов
-            async with session.get(DJANGO_API_BASE_URL + "spaces/") as response_spaces:
-                if response_spaces.status == 200:
-                    spaces = await response_spaces.json()
-
-                    # Формируем клавиатуру с кнопками для каждого зала
-                    keyboard = InlineKeyboardMarkup(
-                        inline_keyboard=[
-                            [
-                                InlineKeyboardButton(
-                                    text=space["name"],
-                                    callback_data=f"view_space_{space['id']}"
-                                )
-                            ]
-                            for space in spaces
-                        ]
-                    )
-
-                    # Отправляем сообщение с клавиатурой
-                    await message.answer(
-                        "Выберите зал, чтобы просмотреть подробную информацию:",
-                        reply_markup=keyboard
-                    )
-                else:
-                    await message.answer("Ошибка при получении списка залов.")
-        except Exception as e:
-            logging.error(f"Ошибка при загрузке данных о залах: {e}")
-            await message.answer("Произошла ошибка при загрузке списка залов.")
-
-
-@dp.callback_query(lambda c: c.data.startswith("view_space_"))
-async def view_space_details(callback_query: types.CallbackQuery):
-    space_id = int(callback_query.data.split("_")[-1])  # Получаем ID зала
-    async with aiohttp.ClientSession() as session:
-        try:
-            # Запрашиваем данные о выбранном зале
-            async with session.get(DJANGO_API_BASE_URL + f"spaces/{space_id}/") as response_space:
-                if response_space.status == 200:
-                    space = await response_space.json()
-                else:
-                    await callback_query.message.answer("Ошибка при загрузке данных о зале.")
-                    return
-
-            # Получаем данные о бронированиях для этого зала
-            async with session.get(DJANGO_API_BASE_URL + "bookings/") as response_bookings:
-                if response_bookings.status == 200:
-                    bookings = await response_bookings.json()
-                else:
-                    bookings = []
-
-            # Фильтруем бронирования по ID зала
-            bookings_for_space = [
-                booking for booking in bookings if int(booking["space"]) == space_id
-            ]
-
-            # Формируем ответ с данными о зале и бронированиях
-            reply = (
-                f"Информация о зале:\n"
-                f"Название: {space['name']}\n"
-                f"Площадь: {space['area']} м²\n"
-                f"Вместимость: {space['capacity']}\n"
-                f"Цена за час: {space['price']} BYN\n"
-                f"Этаж: {space.get('floor', 'Не указан')}\n"
-                f"Описание: {space.get('description', 'Нет описания')}\n\n"
-                f"Бронирования:\n"
-            )
-
-            if bookings_for_space:
-                for booking in bookings_for_space:
-                    reply += f"- Начало: {booking['date']}, Конец: {booking['end_date']}\n"
-            else:
-                reply += "Нет бронирований для этого зала.\n"
-
-            # Отправляем ответ
-            await callback_query.message.answer(reply)
-        except Exception as e:
-            logging.error(f"Ошибка при загрузке данных о зале: {e}")
-            await callback_query.message.answer("Произошла ошибка при загрузке данных о зале.")
-    await callback_query.answer()
-
-
-
-# ================= Команда /equipments =================
-@dp.message(Command("equipments"))
-async def choose_space_for_equipments(message: Message):
-    async with aiohttp.ClientSession() as session:
-        try:
-            # Запрос списка залов
-            async with session.get(DJANGO_API_BASE_URL + "spaces/") as response:
-                if response.status == 200:
-                    spaces = await response.json()
-                    if spaces:
-                        # Создаём клавиатуру с кнопками
-                        keyboard = InlineKeyboardMarkup(
-                            inline_keyboard=[
-                                [
-                                    InlineKeyboardButton(
-                                        text=space['name'],
-                                        callback_data=f"equipments_space_{space['id']}"
-                                    )
-                                ]
-                                for space in spaces
-                            ]
-                        )
-                        await message.answer(
-                            "Выберите зал для просмотра оборудования:",
-                            reply_markup=keyboard
-                        )
-                    else:
-                        await message.answer("Нет доступных залов.")
-                else:
-                    await message.answer("Ошибка при получении данных о залах.")
-        except Exception as e:
-            logging.error(f"Ошибка при запросе к API: {e}")
-            await message.answer("Произошла ошибка при попытке получить данные о залах.")
-
-
-@dp.callback_query(lambda c: c.data.startswith("equipments_space_"))
-async def list_equipments_callback(callback_query):
-    space_id = callback_query.data.split("_")[-1]
-    async with aiohttp.ClientSession() as session:
-        async with session.get(DJANGO_API_BASE_URL + f"equipments/?space_id={space_id}") as response:
+@router.message(BookingState.date)
+async def set_date(message: types.Message, state: FSMContext):
+    """
+    Обработка ввода даты.
+    """
+    async with ClientSession() as session:
+        async with session.get(f"{DJANGO_API_BASE_URL}check-availability/") as response:
             if response.status == 200:
-                equipments = await response.json()
-                if equipments:
-                    reply = "Оборудование:\n"
-                    for eq in equipments:
-                        reply += f"- {eq['name']}: {eq.get('description', 'Описание отсутствует')}\n"
-                    await bot.send_message(callback_query.from_user.id, reply)
-                else:
-                    await bot.send_message(callback_query.from_user.id, "Оборудование отсутствует.")
+                spaces = await response.json()
             else:
-                await bot.send_message(callback_query.from_user.id, "Ошибка при получении данных об оборудовании.")
-    await callback_query.answer()
-
-
-# ================= Команда /parking =================
-@dp.message(Command("parking"))
-async def list_parkings(message: Message):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(DJANGO_API_BASE_URL + "parkings/") as response:
-            if response.status == 200:
-                parkings = await response.json()
-                if parkings:
-                    reply = "Парковки:\n"
-                    for parking in parkings:
-                        is_paid = "Платная" if parking["is_paid"] else "Бесплатная"
-                        price = f"{parking['price_per_hour']} BYN/час" if parking.get("price_per_hour") else ""
-                        reply += f"{parking['name']} ({is_paid}) {price}\n"
-                    await message.answer(reply)
-                else:
-                    await message.answer("Нет доступных парковок.")
-            else:
-                await message.answer("Ошибка при получении данных о парковках.")
-
-
-from datetime import datetime
-import pytz
-
-# Функция для перевода offset-naive datetime в offset-aware
-def make_aware(datetime_obj, timezone='UTC'):
-    if datetime_obj.tzinfo is None:  # Если tzinfo отсутствует, добавляем
-        tz = pytz.timezone(timezone)
-        return tz.localize(datetime_obj)
-    return datetime_obj
-
-# ================= Команда /book =================
-@dp.message(Command("book"))
-async def start_booking(message: Message, state: FSMContext):
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(DJANGO_API_BASE_URL + "spaces/") as response:
-                if response.status == 200:
-                    spaces = await response.json()
-                    if spaces:
-                        keyboard = InlineKeyboardMarkup(
-                            inline_keyboard=[
-                                [
-                                    InlineKeyboardButton(
-                                        text=space['name'],
-                                        callback_data=f"select_space_{space['id']}"
-                                    )
-                                ]
-                                for space in spaces
-                            ]
-                        )
-                        await message.answer(
-                            "Выберите зал для бронирования:",
-                            reply_markup=keyboard
-                        )
-                        # Устанавливаем состояние FSM через set_state
-                        await state.set_state(BookingState.waiting_for_space)
-                    else:
-                        await message.answer("Нет доступных залов.")
-                else:
-                    await message.answer(
-                        f"Ошибка при получении данных о залах: {response.status}"
-                    )
-        except Exception as e:
-            logging.error(f"Ошибка в процессе бронирования: {e}")
-            await message.answer("Произошла ошибка при попытке получить данные о залах.")
-
-
-@dp.callback_query(lambda c: c.data.startswith("select_space_"))
-async def process_space_selection(callback_query, state: FSMContext):
-    space_id = callback_query.data.split("_")[-1]
-    await state.update_data(space_id=space_id)
-    await bot.send_message(callback_query.from_user.id, "Введите ваше имя:")
-    await state.set_state(BookingState.waiting_for_name)
-    await callback_query.answer()
-
-
-@dp.message(BookingState.waiting_for_name)
-async def process_booking_name(message: Message, state: FSMContext):
-    await state.update_data(user_name=message.text)
-    await message.answer("Введите ваш контакт (телефон или email):")
-    await state.set_state(BookingState.waiting_for_contact)
-
-
-@dp.message(BookingState.waiting_for_contact)
-async def process_booking_contact(message: Message, state: FSMContext):
-    await state.update_data(user_contact=message.text)
-    await message.answer("Введите дату начала бронирования (в формате ГГГГ-ММ-ДД ЧЧ:ММ):")
-    await state.set_state(BookingState.waiting_for_date)
-
-
-@dp.message(BookingState.waiting_for_date)
-async def process_booking_date(message: Message, state: FSMContext):
+                spaces = []  # Если запрос не удался, оставляем список пустым
+    
     await state.update_data(date=message.text)
-    await message.answer("Введите дату окончания бронирования (в формате ГГГГ-ММ-ДД ЧЧ:ММ):")
-    await state.set_state(BookingState.waiting_for_end_date)
 
+    # Формируем кнопки для клавиатуры
+    buttons = [[types.KeyboardButton(text=space['name'])] for space in spaces]
+    reply_markup = types.ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
-@dp.message(BookingState.waiting_for_end_date)
-async def process_booking_end_date(message: Message, state: FSMContext):
-    await state.update_data(end_date=message.text)
+    await message.reply("Выберите пространство:", reply_markup=reply_markup)
+    await state.set_state(BookingState.space)
 
-    # Получаем данные из состояния FSM
-    data = await state.get_data()
+@router.message(BookingState.space)
+async def set_space(message: types.Message, state: FSMContext):
+    """
+    Обработка выбора пространства.
+    """
+    await state.update_data(space=message.text)
+    await message.reply("Укажите ваши предпочтения (например, освещение, звук и т.д.):")
+    await state.set_state(BookingState.preferences)
 
-    # Проверяем формат введённых дат
-    try:
-        # Используем make_aware для обработки дат
-        start_date = make_aware(datetime.fromisoformat(data["date"]), timezone='Europe/Minsk')  # Исправление здесь
-        end_date = make_aware(datetime.fromisoformat(data["end_date"]), timezone='Europe/Minsk')  # Исправление здесь
-    except ValueError:
-        await message.answer("Некорректный формат даты. Убедитесь, что используете формат ГГГГ-ММ-ДД ЧЧ:ММ.")
-        await state.clear()  # Очистка состояния при некорректном вводе
-        return
+@router.message(BookingState.preferences)
+async def set_preferences(message: types.Message, state: FSMContext):
+    """
+    Обработка предпочтений и завершение бронирования.
+    """
+    user_data = await state.get_data()  # Получаем данные из текущего состояния
+    user_data['preferences'] = message.text  # Сохраняем введенные предпочтения
 
-    # Формируем payload для API
-    booking_payload = {
-        "space": data["space_id"],
-        "user_name": data["user_name"],
-        "user_contact": data["user_contact"],
-        "date": start_date.isoformat(),
-        "end_date": end_date.isoformat()
-    }
+    async with ClientSession() as session:
+        async with session.post(f"{DJANGO_API_BASE_URL}create-booking/", json=user_data) as response:
+            if response.status == 201:
+                await message.reply("Ваше бронирование успешно создано!")
+            else:
+                await message.reply("Произошла ошибка. Попробуйте снова.")
+    
+    await state.clear()  # Очищаем все состояния после завершения
 
-    # Логирование для отладки
-    logging.info(f"Payload бронирования: {booking_payload}")
+# Регистрация роутера в диспетчере
+dp.include_router(router)
 
-    async with aiohttp.ClientSession() as session:
-        try:
-            # Проверяем существующие бронирования
-            async with session.get(DJANGO_API_BASE_URL + "bookings/") as response:
-                if response.status == 200:
-                    bookings = await response.json()
-                    logging.info(f"Все бронирования: {bookings}")
-                    conflicts = [
-                        booking for booking in bookings
-                        if int(booking["space"]) == int(booking_payload["space"]) and
-                        not (
-                            make_aware(datetime.fromisoformat(booking_payload["end_date"]), timezone='Europe/Minsk') <= make_aware(datetime.fromisoformat(booking["date"]), timezone='Europe/Minsk') or
-                            make_aware(datetime.fromisoformat(booking_payload["date"]), timezone='Europe/Minsk') >= make_aware(datetime.fromisoformat(booking["end_date"]), timezone='Europe/Minsk')
-                        )
-                    ]
-                    if conflicts:
-                        await message.answer("Выбранное время уже занято. Попробуйте указать другой промежуток.")
-                        return
-
-            # Создаём бронирование
-            async with session.post(DJANGO_API_BASE_URL + "bookings/create/", json=booking_payload) as response_post:
-                if response_post.status in (200, 201):
-                    await message.answer("Бронирование успешно создано!")
-                else:
-                    error_text = await response_post.text()
-                    logging.error(f"Ошибка API: {error_text}")
-                    await message.answer(f"Не удалось создать бронирование. Ответ сервера: {error_text}")
-        except Exception as e:
-            logging.error(f"Ошибка при проверке доступности: {e}")
-            await message.answer("Произошла ошибка при проверке доступности зала.")
-        finally:
-            # Выполняется вне зависимости от успеха выполнения
-            await state.clear()
-
-# ================= Запуск бота =================
 async def main():
+    """
+    Запуск бота.
+    """
     await dp.start_polling(bot)
 
+# Запуск приложения
 if __name__ == "__main__":
     asyncio.run(main())
