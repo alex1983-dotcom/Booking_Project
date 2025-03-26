@@ -25,7 +25,8 @@ router = Router()
 
 # Класс состояний для FSM
 class BookingState(StatesGroup):
-    date = State()
+    start_date = State()
+    end_date = State()
     space = State()
     preferences = State()
 
@@ -35,14 +36,25 @@ async def start(message: types.Message, state: FSMContext):
     Обработчик команды /start.
     Запуск диалога для бронирования.
     """
-    await message.reply("Привет! Укажите дату для бронирования:")
-    await state.set_state(BookingState.date)
+    await message.reply("Привет! Укажите дату и время начала мероприятия (в формате YYYY-MM-DD HH:MM):")
+    await state.set_state(BookingState.start_date)
 
-@router.message(BookingState.date)
-async def set_date(message: types.Message, state: FSMContext):
+@router.message(BookingState.start_date)
+async def set_start_date(message: types.Message, state: FSMContext):
     """
-    Обработка ввода даты.
+    Обработка ввода даты начала.
     """
+    await state.update_data(start_date=message.text)  # Сохраняем дату начала
+    await message.reply("Укажите дату и время окончания мероприятия (в формате YYYY-MM-DD HH:MM):")
+    await state.set_state(BookingState.end_date)
+
+@router.message(BookingState.end_date)
+async def set_end_date(message: types.Message, state: FSMContext):
+    """
+    Обработка ввода даты окончания.
+    """
+    await state.update_data(end_date=message.text)  # Сохраняем дату окончания
+
     async with ClientSession() as session:
         async with session.get(f"{DJANGO_API_BASE_URL}check-availability/") as response:
             if response.status == 200:
@@ -50,8 +62,6 @@ async def set_date(message: types.Message, state: FSMContext):
             else:
                 spaces = []  # Если запрос не удался, оставляем список пустым
     
-    await state.update_data(date=message.text)
-
     # Формируем кнопки для клавиатуры
     buttons = [[types.KeyboardButton(text=space['name'])] for space in spaces]
     reply_markup = types.ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
@@ -64,7 +74,7 @@ async def set_space(message: types.Message, state: FSMContext):
     """
     Обработка выбора пространства.
     """
-    await state.update_data(space=message.text)
+    await state.update_data(space=message.text)  # Сохраняем выбранное пространство
     await message.reply("Укажите ваши предпочтения (например, освещение, звук и т.д.):")
     await state.set_state(BookingState.preferences)
 

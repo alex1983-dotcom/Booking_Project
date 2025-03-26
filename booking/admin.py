@@ -23,7 +23,7 @@ class BookingAdmin(admin.ModelAdmin):
     """
     Админка для модели Booking.
     """
-    list_display = ('space', 'event_date', 'event_format', 'guests_count', 'contact_method')
+    list_display = ('space', 'event_start_date', 'event_end_date', 'event_format', 'guests_count', 'contact_method')
     search_fields = ('space__name', 'event_format')  # Поля поиска
-    list_filter = ('event_date', 'space')  # Фильтры
-    ordering = ('event_date',)  # Сортировка
+    list_filter = ('event_start_date', 'space')  # Фильтры
+    ordering = ('event_start_date',)  # Сортировка
