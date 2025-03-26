@@ -48,13 +48,13 @@ async def set_date(message: types.Message, state: FSMContext):
             if response.status == 200:
                 spaces = await response.json()
             else:
-                spaces = []
+                spaces = []  # Если запрос не удался, оставляем список пустым
     
     await state.update_data(date=message.text)
 
-    reply_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    for space in spaces:
-        reply_markup.add(types.KeyboardButton(space['name']))
+    # Формируем кнопки для клавиатуры
+    buttons = [[types.KeyboardButton(text=space['name'])] for space in spaces]
+    reply_markup = types.ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
     await message.reply("Выберите пространство:", reply_markup=reply_markup)
     await state.set_state(BookingState.space)
@@ -73,8 +73,8 @@ async def set_preferences(message: types.Message, state: FSMContext):
     """
     Обработка предпочтений и завершение бронирования.
     """
-    user_data = await state.get_data()
-    user_data['preferences'] = message.text
+    user_data = await state.get_data()  # Получаем данные из текущего состояния
+    user_data['preferences'] = message.text  # Сохраняем введенные предпочтения
 
     async with ClientSession() as session:
         async with session.post(f"{DJANGO_API_BASE_URL}create-booking/", json=user_data) as response:
@@ -83,7 +83,7 @@ async def set_preferences(message: types.Message, state: FSMContext):
             else:
                 await message.reply("Произошла ошибка. Попробуйте снова.")
     
-    await state.clear()
+    await state.clear()  # Очищаем все состояния после завершения
 
 # Регистрация роутера в диспетчере
 dp.include_router(router)
@@ -97,3 +97,4 @@ async def main():
 # Запуск приложения
 if __name__ == "__main__":
     asyncio.run(main())
+
