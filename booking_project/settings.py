@@ -40,8 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
-    'booking',
-    'bot',
+    'booking.apps.BookingConfig',
+    'bot.apps.BotConfig',
 ]
 
 MIDDLEWARE = [
