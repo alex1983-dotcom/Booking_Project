@@ -1,5 +1,5 @@
-from django.db import models
-from .space_models import Space
+# from django.db import models
+from . import *
 import datetime
 
 
@@ -7,7 +7,7 @@ class Booking(models.Model):
     """
     Модель, представляющая бронирование.
     """
-    space = models.ForeignKey(Space, on_delete=models.CASCADE)  # Связь с пространством
+    space = models.ForeignKey('Space', on_delete=models.CASCADE)  # Связь с пространством
     event_start_date = models.DateTimeField(default=datetime.datetime.now)  # Импортируйте datetime
     # Дата и время начала бронирования
     event_end_date = models.DateTimeField()  # Дата и время окончания бронирования

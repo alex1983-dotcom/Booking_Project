@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Space, Booking
+from .models import AbstractItem, Space, Booking
 
 # class BookingInline(admin.TabularInline):
 #     """
@@ -13,8 +13,8 @@ class SpaceAdmin(admin.ModelAdmin):
     """
     Админка для модели Space.
     """
-    list_display = ('name', 'capacity', 'price_per_hour', 'area')  # Отображаемые поля
-    search_fields = ('name',)  # Поле поиска
+    list_display = ('capacity', 'area')  # Отображаемые поля
+    # search_fields = ('name',)  # Поле поиска
     # inlines = [BookingInline]  # Подключение inline-редактора
 
 @admin.register(Booking)

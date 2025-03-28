@@ -1,20 +1,38 @@
-from django.db import models
+from . import *
 import datetime
 
 
-class Space(models.Model):
+class AbstractItem(models.Model):
+    """
+    Общие свойства для моделей помещений и доп. опций
+    """
+    name = models.CharField(max_length=20, default='test_name',
+                            help_text='Название', verbose_name='Название')  # Название
+    description = models.TextField(default='test_description',
+                                   help_text='Описание', verbose_name='Описание') # Описание
+
+    class Meta:
+        abstract = True
+        ordering = ['name']
+
+    def __str__(self):
+        return f'{self.name}: {self.description[:20]}...'
+
+class Space(AbstractItem):
     """
     Модель, представляющая пространство для бронирования.
     """
-    name = models.CharField(max_length=100)  # Название пространства
-    capacity = models.PositiveIntegerField()  # Вместимость пространства
-    price_per_hour = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) # Цена в час
-    area = models.PositiveIntegerField(default=0) # Полощадь пространства в метрах квадратных
+    capacity = models.PositiveIntegerField(default=1)  # Вместимость пространства
+    area = models.PositiveIntegerField(default=1) # Полощадь в метрах квадратных
+
     class Meta:
         verbose_name = "Пространство"
         verbose_name_plural = "Пространства"
-        ordering = ['name']
-        # app_label = 'models'
 
-    def __str__(self):
-        return f"{self.name} - {self.area} м.кв. - {self.price_per_hour} BYN/час"
+
+class Option(AbstractItem):
+    all_count = models.PositiveIntegerField(default=1, help_text='Количество', verbose_name='Количество')
+
+    class Meta:
+        verbose_name = 'Дополнительная опция'
+        verbose_name_plural = 'Дополнительные опции'
