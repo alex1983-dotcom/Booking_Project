@@ -1,6 +1,7 @@
 from django.db import models
 from datetime import datetime
-from .space_models import Space  # Импорт модели Space из space_models
+from .space_models import Space  
+
 
 class Preference(models.Model):
     """
