@@ -1,178 +1,204 @@
 # Документация по моделям
+---
 
-### 1. **Модуль `space_models.py`**
+### `__init__.py`
+Этот файл служит для создания пакета из директории, в которой он находится. Он импортирует классы моделей из других модулей, таких как `space_models`, `booking_models` и `price_models`.
 
-#### 1.1. **Абстрактная модель `AbstractItem`**
+Импортируемые модули:
+- `AbstractItem`, `Space`, `Option` из `space_models`.
+- `Booking` из `booking_models`.
+- `PriceAbstract`, `PriceSpace`, `PriceOption` из `price_models`.
 
-```python
-class AbstractItem(models.Model):
-    """
-    Общие свойства для моделей помещений и доп. опций.
-    """
-    name = models.CharField(max_length=20, default='test_name',
-                            help_text='Название', verbose_name='Название')  # Название
-    description = models.TextField(default='test_description',
-                                   help_text='Описание', verbose_name='Описание') # Описание
+---
 
-    class Meta:
-        abstract = True
-        ordering = ['name']
+### `booking_models.py`
 
-    def __str__(self):
-        return f'{self.name}: {self.description[:20]}...'
-```
+#### **Preference**
+- **Описание:** Представляет предпочтения, которые могут быть указаны в бронировании.
+- **Поля:**
+  - `name` (`CharField`): Название предпочтения, строка длиной до 50 символов.
+- **Методы:**
+  - `__str__`: Возвращает название предпочтения.
 
-- **Назначение**: Абстрактная модель, которая определяет общие поля для моделей, связанных с помещениями и дополнительными опциями.
-- **Поля**:
-  - `name`: Название объекта (макс. 20 символов).
-  - `description`: Описание объекта.
-- **Meta**:
-  - `abstract = True`: Модель не будет создана в базе данных.
-  - `ordering = ['name']`: Указывает порядок сортировки объектов по имени.
-- **Метод `__str__`**: Возвращает строковое представление объекта.
+---
 
-#### 1.2. **Модель `Space`**
+#### **Booking**
+- **Описание:** Модель для представления бронирования.
+- **Поля:**
+  - `space` (`ForeignKey`): Ссылка на модель `Space`, представляет бронируемое пространство.
+  - `event_start_date` (`DateTimeField`): Дата и время начала бронирования.
+  - `event_end_date` (`DateTimeField`): Дата и время окончания бронирования.
+  - `event_format` (`CharField`): Формат мероприятия, строка до 100 символов.
+  - `guests_count` (`PositiveIntegerField`): Количество гостей.
+  - `preferences` (`ManyToManyField`): Ссылка на модель `Preference`, дополнительные пожелания.
+  - `promo_code` (`CharField`): Промокод для скидки (необязательное поле).
+  - `contact_method` (`CharField`): Способ связи, строка длиной до 50 символов.
+  - `created_at` (`DateTimeField`): Дата и время создания бронирования.
+  - `status` (`IntegerField`): Текущий статус бронирования. Возможные значения:
+    - 1: Свободно.
+    - 2: Забронировано.
+- **Методы:**
+  - `__str__`: Возвращает строковое представление бронирования.
+  - `get_status_display`: Возвращает текстовый статус в зависимости от значения поля `status`.
+- **Метаданные:**
+  - `verbose_name`: "Бронирование".
+  - `verbose_name_plural`: "Бронирования".
+  - `ordering`: Сортировка по `event_start_date`.
 
-```python
-class Space(AbstractItem):
-    """
-    Модель, представляющая пространство для бронирования.
-    """
-    capacity = models.PositiveIntegerField(default=1)  # Вместимость пространства
-    area = models.PositiveIntegerField(default=1) # Площадь в метрах квадратных
+---
 
-    class Meta:
-        verbose_name = "Пространство"
-        verbose_name_plural = "Пространства"
-```
+### `space_models.py`
 
-- **Назначение**: Модель, представляющая пространство, которое можно забронировать.
-- **Поля**:
-  - `capacity`: Вместимость пространства (положительное целое число).
-  - `area`: Площадь пространства в квадратных метрах (положительное целое число).
-- **Meta**: Задает человекочитаемые имена для модели.
+#### **AbstractItem**
+- **Описание:** Абстрактный класс для общих характеристик.
+- **Поля:**
+  - `name` (`CharField`): Название.
+  - `description` (`TextField`): Описание.
+- **Метаданные:**
+  - `abstract`: Класс абстрактный.
+  - `ordering`: Сортировка по полю `name`.
+- **Методы:**
+  - `__str__`: Возвращает строку вида "name: первые 20 символов description".
 
-#### 1.3. **Модель `Option`**
+---
 
-```python
-class Option(AbstractItem):
-    all_count = models.PositiveIntegerField(default=1, help_text='Количество', verbose_name='Количество')
+#### **Space**
+- **Описание:** Представляет пространство для бронирования.
+- **Наследуется от:** `AbstractItem`.
+- **Поля:**
+  - `capacity` (`PositiveIntegerField`): Вместимость пространства.
+  - `area` (`PositiveIntegerField`): Площадь в квадратных метрах.
+- **Метаданные:**
+  - `verbose_name`: "Пространство".
+  - `verbose_name_plural`: "Пространства".
 
-    class Meta:
-        verbose_name = 'Дополнительная опция'
-        verbose_name_plural = 'Дополнительные опции'
-```
+---
 
-- **Назначение**: Модель, представляющая дополнительные опции для бронирования.
-- **Поля**:
-  - `all_count`: Количество доступных опций.
-- **Meta**: Задает человекочитаемые имена для модели.
+#### **Option**
+- **Описание:** Дополнительные опции для бронирования.
+- **Наследуется от:** `AbstractItem`.
+- **Поля:**
+  - `all_count` (`PositiveIntegerField`): Общее количество.
+- **Метаданные:**
+  - `verbose_name`: "Дополнительная опция".
+  - `verbose_name_plural`: "Дополнительные опции".
 
-### 2. **Модуль `booking_models.py`**
+---
 
-#### 2.1. **Модель `Booking`**
+### `price_models.py`
 
-```python
-class Booking(models.Model):
-    """
-    Модель, представляющая бронирование.
-    """
-    space = models.ForeignKey('Space', on_delete=models.CASCADE)  # Связь с пространством
-    event_start_date = models.DateTimeField(default=datetime.datetime.now)  # Дата и время начала бронирования
-    event_end_date = models.DateTimeField()  # Дата и время окончания бронирования
-    event_format = models.CharField(max_length=100)  # Формат мероприятия
-    guests_count = models.PositiveIntegerField()  # Количество гостей
-    preferences = models.JSONField()  # Дополнительные предпочтения
-    promo_code = models.CharField(max_length=50, blank=True, null=True)  # Промокод (опционально)
-    contact_method = models.CharField(max_length=50)  # Контактные данные
-    created_at = models.DateTimeField(auto_now_add=True)  # Дата создания записи
+#### **AbstractItem**
+- **Описание:** Абстрактная модель с общими свойствами (аналогичная `AbstractItem` в `space_models.py`).
 
-    class Meta:
-        verbose_name = "Бронирование"
-        verbose_name_plural = "Бронирования"
-        ordering = ['event_start_date']
+#### **Space**
+- **Описание:** Модель для пространств (аналогичная `Space` в `space_models.py`).
 
-    def __str__(self):
-        return f"Бронирование {self.space.name} с {self.event_start_date} по {self.event_end_date}"
-```
+#### **Option**
+- **Описание:** Дополнительные опции (аналогичная `Option` в `space_models.py`).
 
-- **Назначение**: Модель, представляющая запись о бронировании пространства.
-- **Поля**:
-  - `space`: Связь с моделью `Space` (один ко многим).
-  - `event_start_date`: Дата и время начала бронирования.
-  - `event_end_date`: Дата и время окончания бронирования.
-  - `event_format`: Формат мероприятия.
-  - `guests_count`: Количество гостей.
-  - `preferences`: Дополнительные предпочтения в формате JSON.
-  - `promo_code`: Промокод (необязательное поле).
-  - `contact_method`: Контактные данные.
-  - `created_at`: Дата и время создания записи.
-- **Meta**: Задает порядок сортировки по дате начала события.
 
-### 3. **Модуль `price_models.py`**
+# Настройка административного сайта
+---
 
-#### 3.1. **Абстрактная модель `PriceAbstract`**
+### **Административный интерфейс**
 
-```python
-class PriceAbstract(models.Model):
-    date_new_price = models.DateField(default=datetime.datetime.now)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+#### **SpaceAdmin**
+- **Описание:** Конфигурация админки для модели `Space`.
+- **Настройки:**
+  - `list_display`: Отображает поля `id`, `name`, `capacity`, `area` в таблице админки.
+  - `search_fields`: Добавляет поле `name` для поиска.
+  - `list_filter`: Фильтры по полям `capacity` и `area`.
 
-    class Meta:
-        abstract = True
+---
 
-    def __str__(self):
-        return f'{self.price} руб/час с {self.date_new_price}'
-```
+#### **OptionAdmin**
+- **Описание:** Конфигурация админки для модели `Option`.
+- **Настройки:**
+  - `list_display`: Отображает поля `id`, `name`, `all_count` в таблице админки.
+  - `search_fields`: Добавляет поле `name` для поиска.
+  - `list_filter`: Фильтр по полю `all_count`.
 
-- **Назначение**: Абстрактная модель для хранения цен.
-- **Поля**:
-  - `date_new_price`: Дата, когда была установлена новая цена.
-  - `price`: Цена (десятичное число с двумя знаками после запятой).
-- **Meta**: Модель не будет создана в базе данных.
+---
 
-#### 3.2. **Модель `PriceSpace`**
+#### **PreferenceAdmin**
+- **Описание:** Конфигурация админки для модели `Preference`.
+- **Настройки:**
+  - `list_display`: Отображает поля `id`, `name` в таблице админки.
+  - `search_fields`: Добавляет поле `name` для поиска.
 
-```python
-class PriceSpace(PriceAbstract):
-    space_id = models.ForeignKey(to='Space', on_delete=models.CASCADE,
-                                 related_name='price_of_space')
+---
 
-    class Meta:
-        verbose_name = "Цены на помещения"
-```
+#### **BookingAdmin**
+- **Описание:** Конфигурация админки для модели `Booking`.
+- **Настройки:**
+  - `form`: Используется пользовательская форма `BookingForm`.
+  - `list_display`: Отображает поля `id`, `space`, `event_start_date`, `event_end_date`, `guests_count`, `status`.
+  - `search_fields`: Поля `space__name` и `event_format` доступны для поиска.
+  - `list_filter`: Фильтры по полям `event_start_date` и `status`.
+  - `filter_horizontal`: Добавляет интерфейс для удобного выбора поля `preferences`.
 
-- **Назначение**: Модель для хранения цен на пространства.
-- **Поля**:
-  - `space_id`: Связь с моделью `Space`.
-- **Meta**: Задает человекочитаемое имя для модели.
+---
 
-#### 3.3. **Модель `PriceOption`**
+#### **PriceSpaceAdmin**
+- **Описание:** Конфигурация админки для модели `PriceSpace`.
+- **Настройки:**
+  - `list_display`: Отображает поля `id`, `space_id`, `price`, `date_new_price`.
+  - `search_fields`: Поле `space_id__name` для поиска.
+  - `list_filter`: Фильтр по полю `date_new_price`.
 
-```python
-class PriceOption(PriceAbstract):
-    option_id = models.ForeignKey(to='Option', on_delete=models.CASCADE,
-                                  related_name='price_of_option')
+---
 
-    class Meta:
-        verbose_name = 'Цены на дополнительные услуги'
-```
+#### **PriceOptionAdmin**
+- **Описание:** Конфигурация админки для модели `PriceOption`.
+- **Настройки:**
+  - `list_display`: Отображает поля `id`, `option_id`, `price`, `date_new_price`.
+  - `search_fields`: Поле `option_id__name` для поиска.
+  - `list_filter`: Фильтр по полю `date_new_price`.
 
-- **Назначение**: Модель для хранения цен на дополнительные опции.
-- **Поля**:
-  - `option_id`: Связь с моделью `Option`.
-- **Meta**: Задает человекочитаемое имя для модели.
+---
 
-### Общая структура и взаимодействие
+#### **BookingForm**
+- **Описание:** Пользовательская форма для модели `Booking`.
+- **Настройки:**
+  - `model`: Указывает, что форма создаётся для модели `Booking`.
+  - `fields`: Указывает, что в форме должны быть все поля модели (`'__all__'`).
 
-1. **Абстрактные модели** (`AbstractItem`, `PriceAbstract`):
-   - Позволяют избежать дублирования кода, определяя общие поля и поведение для других моделей.
 
-2. **Основные модели**:
-   - `Space` и `Option` используют `AbstractItem` для описания пространств и дополнительных опций.
-   - `Booking` связывает бронирования с пространствами и содержит информацию о мероприятиях.
-   - `PriceSpace` и `PriceOption` определяют цены для соответствующих моделей.
+#  Схема моделей
 
-3. **Связи**:
-   - Используются связи один ко многим (`ForeignKey`), чтобы связать бронирования с пространствами и цены с опциями и пространствами.
+    +-----------------+           +-----------------+
+    |   AbstractItem  |           |  Preference     |
+    |-----------------|           |-----------------|
+    | - name          |<------┐   | - name          |
+    | - description   |       |   +-----------------+
+    +-----------------+       |         ▲
+                              |         |
+                              |      +-----------------+
+    +-----------------+       |----->|    Booking      |
+    |     Space       |              |-----------------|
+    |-----------------|              | - space (FK)    |
+    | - capacity      |              | - event_start   |
+    | - area          |              | - event_end     |
+    |-----------------|              | - event_format  |
+    | Inherits:       |              | - guests_count  |
+    | AbstractItem    |              | - preferences   |
+    +-----------------+              | - promo_code    |
+                                     | - contact_method|
+                                     | - status        |
+    +-----------------+              +-----------------+
+    |     Option      |
+    |-----------------|
+    | - all_count     |
+    |-----------------|
+    | Inherits:       |
+    | AbstractItem    |
+    +-----------------+
+
+    +-----------------+           +-----------------+
+    |     PriceSpace  |           |   PriceOption   |
+    |-----------------|           |-----------------|
+    | - space_id      |           | - option_id     |
+    | - price         |           | - price         |
+    | - date_new_price|           | - date_new_price|
+    +-----------------+           +-----------------+
 
