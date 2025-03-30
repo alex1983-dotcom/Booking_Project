@@ -1,6 +1,9 @@
 from django.http import JsonResponse
 from bot_booking.utils import send_order_to_bitrix  # Импорт вспомогательной функции
 
+# Пример Вьюхи
+# Нужны данные от сервиса на Bitrix24--(webhook-id и webhook-code)
+# Нужен ID чат клиента
 def handle_order(request):
     """
     Обрабатывает поступающие заказы и отправляет их в Bitrix24.
@@ -15,3 +18,4 @@ def handle_order(request):
         response = send_order_to_bitrix(chat_id, order_data, webhook_url)
         return JsonResponse({"status": "success", "response": response})
     return JsonResponse({"status": "error", "message": "Invalid request method"})
+
