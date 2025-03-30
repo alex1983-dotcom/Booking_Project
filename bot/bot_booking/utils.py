@@ -2,6 +2,8 @@ def some_helper_function():
     # Пример вспомогательной функции
     pass
 
+
+# Нужны данные от сервиса на Bitrix24--(webhook-id и webhook-code)
 import requests
 
 def send_order_to_bitrix(chat_id, message, webhook_url):
