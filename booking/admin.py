@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from .models.space_models import Space, Option
-from .models.booking_models import Booking, Preference
+from .models.booking_models import Booking, AdditionalPreference
 from .models.price_models import PriceSpace, PriceOption
 
 @admin.register(Space)
@@ -16,8 +16,8 @@ class OptionAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     list_filter = ('all_count',)
 
-@admin.register(Preference)
-class PreferenceAdmin(admin.ModelAdmin):
+@admin.register(AdditionalPreference)
+class AdditionalPreferenceAdmin(admin.ModelAdmin):
     list_display = ('id', 'name') 
     search_fields = ('name',) 
 

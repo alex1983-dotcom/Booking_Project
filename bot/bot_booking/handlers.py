@@ -17,14 +17,28 @@ router = Router()
 
 # === Обработчики ===
 
-# Обработчик команды /start
 @router.message(Command(commands=['start']))
 async def start_booking(message: types.Message, state: FSMContext):
     """
     Запуск процесса бронирования.
     """
     logger.info("Команда /start получена.")
-    await message.reply("Выберите день начала мероприятия:", reply_markup=create_calendar("start"))
+
+    # Приветствие с эмодзи
+    greeting = (
+        "👋 Привет, я бот Innodom! 🤖\n\n"
+        "Готов помочь вам с бронированием.\n"
+        "Вот что я умею:\n"
+        "- 📅 Помогу выбрать дату и время.\n"
+        "- 🏢 Покажу доступные залы.\n"
+        "- ✅ Завершу бронирование за вас.\n\n"
+        "Давайте начнем!"
+    )
+
+    await message.reply(greeting)
+
+    # Инструкция для пользователя
+    await message.reply("Выберите день начала мероприятия: 🗓️", reply_markup=create_calendar("start"))
     await state.set_state("select_start_day")
 
 
@@ -34,7 +48,7 @@ async def process_start_day(callback_query: types.CallbackQuery, state: FSMConte
     day = callback_query.data.split(":")[1]
     logger.info(f"Выбран день начала: {day}")
     await state.update_data(start_day=day)
-    await callback_query.message.edit_text("Выберите месяц начала мероприятия:", reply_markup=create_month_keyboard("start"))
+    await callback_query.message.edit_text("Выберите месяц начала мероприятия: 🗓️", reply_markup=create_month_keyboard("start"))
     await state.set_state("select_start_month")
 
 
@@ -44,7 +58,7 @@ async def process_start_month(callback_query: types.CallbackQuery, state: FSMCon
     month = callback_query.data.split(":")[1]
     logger.info(f"Выбран месяц начала: {month}")
     await state.update_data(start_month=month)
-    await callback_query.message.edit_text("Выберите год начала мероприятия:", reply_markup=create_year_keyboard("start"))
+    await callback_query.message.edit_text("Выберите год начала мероприятия: 🗓️", reply_markup=create_year_keyboard("start"))
     await state.set_state("select_start_year")
 
 
@@ -145,7 +159,7 @@ async def process_end_minute(callback_query: types.CallbackQuery, state: FSMCont
                 halls = response_data.get("spaces", [])
                 logger.info(f"Доступные залы: {halls}")
                 if halls:
-                    await callback_query.message.edit_text("Выберите доступный зал:", reply_markup=create_halls_keyboard(halls))
+                    await callback_query.message.edit_text("Выберите доступный зал: 🏢", reply_markup=create_halls_keyboard(halls))
                     await state.set_state("hall_selection")
                 else:
                     await callback_query.message.edit_text("Нет доступных залов на указанное время.")

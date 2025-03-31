@@ -1,5 +1,7 @@
 # Импорт настроек
 from .config import bot, storage, logger, DJANGO_API_BASE_URL
+from .handlers import router
+from .utils import some_helper_function  
 
 # Импорт клавиатур
 from .keyboards import (
@@ -10,12 +12,6 @@ from .keyboards import (
     create_minute_keyboard,
     create_halls_keyboard,
 )
-
-# Импорт обработчиков
-from .handlers import router
-
-# Импорт утилит
-from .utils import some_helper_function  # Добавьте ваши утилиты
 
 # Экспортируем все зависимости
 __all__ = [

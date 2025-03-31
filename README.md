@@ -177,8 +177,9 @@
     +-----------------+       |----->|    Booking      |
     |     Space       |              |-----------------|
     |-----------------|              | - space (FK)    |
-    | - capacity      |              | - event_start   |
-    | - area          |              | - event_end     |
+    | -number_of_seats|              | - event_start   |
+    | - area
+    | -           |              | - event_end     |
     |-----------------|              | - event_format  |
     | Inherits:       |              | - guests_count  |
     | AbstractItem    |              | - preferences   |

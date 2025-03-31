@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from bot_booking.utils import send_order_to_bitrix  # Импорт вспомогательной функции
+from .utils import send_order_to_bitrix  # Импорт вспомогательной функции
 
 # Пример Вьюхи
 # Нужны данные от сервиса на Bitrix24--(webhook-id и webhook-code)
