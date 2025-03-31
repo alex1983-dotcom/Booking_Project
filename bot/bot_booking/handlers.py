@@ -43,6 +43,8 @@ async def start_booking(message: types.Message, state: FSMContext):
     await state.set_state("select_start_day")
 
 
+
+
 # Обработчики выбора даты начала мероприятия
 @router.callback_query(lambda c: c.data.startswith("start_day:"))
 async def process_start_day(callback_query: types.CallbackQuery, state: FSMContext):
@@ -205,6 +207,9 @@ async def process_guests_input(message: types.Message, state: FSMContext):
             await message.reply(f"❌ Ошибка соединения с сервером: {str(e)}")
             logger.error(f"Ошибка при отправке запроса: {str(e)}")
 
+
+
+
 #=========================== Обработчик выбора зала==========================
 @router.callback_query(lambda c: c.data.startswith("hall:"))
 async def process_hall_selection(callback_query: types.CallbackQuery, state: FSMContext):
@@ -244,6 +249,7 @@ async def process_hall_selection(callback_query: types.CallbackQuery, state: FSM
         # Общая обработка ошибок
         await callback_query.message.reply(f"❌ Произошла ошибка: {str(e)}")
         logger.error(f"Неожиданная ошибка в process_hall_selection: {str(e)}")
+
 
 
 
