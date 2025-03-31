@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Space, Booking
+from .models import Space, Booking, AdditionalPreference
 
 class SpaceSerializer(serializers.ModelSerializer):
     """
@@ -9,10 +9,10 @@ class SpaceSerializer(serializers.ModelSerializer):
         model = Space
         fields = '__all__'
 
-from rest_framework import serializers
-from .models import Booking
-
 class BookingSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Booking.
+    """
     class Meta:
         model = Booking
         fields = [
@@ -25,3 +25,11 @@ class BookingSerializer(serializers.ModelSerializer):
             'promo_code',
             'contact_method'
         ]
+
+class PreferenceSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели AdditionalPreference.
+    """
+    class Meta:
+        model = AdditionalPreference
+        fields = '__all__'

@@ -1,7 +1,7 @@
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
 from aiohttp import ClientSession
-from aiogram.filters import Command, StateFilter  # Используем фильтры для команд и состояний
+from aiogram.filters import Command, StateFilter
 from .keyboards import (
     create_calendar,
     create_month_keyboard,
@@ -9,6 +9,8 @@ from .keyboards import (
     create_hour_keyboard,
     create_minute_keyboard,
     create_halls_keyboard,
+    create_preferences_keyboard,
+    create_feedback_keyboard
 )
 from .config import logger, DJANGO_API_BASE_URL
 
@@ -24,25 +26,24 @@ async def start_booking(message: types.Message, state: FSMContext):
     """
     logger.info("Команда /start получена.")
 
-    # Приветствие с эмодзи
     greeting = (
         "👋 Привет, я бот Innodom! 🤖\n\n"
-        "Готов помочь вам с бронированием.\n"
+        "Я помогу вам забронировать зал для вашего мероприятия.\n"
         "Вот что я умею:\n"
-        "- 📅 Помогу выбрать дату и время.\n"
-        "- 🏢 Покажу доступные залы.\n"
-        "- ✅ Завершу бронирование за вас.\n\n"
+        "- 📅 Выбрать дату и время.\n"
+        "- 🏢 Найти доступный зал.\n"
+        "- ✅ Завершить бронирование.\n\n"
         "Давайте начнем!"
     )
 
     await message.reply(greeting)
 
-    # Инструкция для пользователя
+    # Инструкция для выбора даты начала
     await message.reply("Выберите день начала мероприятия: 🗓️", reply_markup=create_calendar("start"))
     await state.set_state("select_start_day")
 
 
-# Обработчик выбора дня начала
+# Обработчики выбора даты начала мероприятия
 @router.callback_query(lambda c: c.data.startswith("start_day:"))
 async def process_start_day(callback_query: types.CallbackQuery, state: FSMContext):
     day = callback_query.data.split(":")[1]
@@ -52,7 +53,6 @@ async def process_start_day(callback_query: types.CallbackQuery, state: FSMConte
     await state.set_state("select_start_month")
 
 
-# Обработчик выбора месяца начала
 @router.callback_query(lambda c: c.data.startswith("start_month:"))
 async def process_start_month(callback_query: types.CallbackQuery, state: FSMContext):
     month = callback_query.data.split(":")[1]
@@ -62,7 +62,6 @@ async def process_start_month(callback_query: types.CallbackQuery, state: FSMCon
     await state.set_state("select_start_year")
 
 
-# Обработчик выбора года начала
 @router.callback_query(lambda c: c.data.startswith("start_year:"))
 async def process_start_year(callback_query: types.CallbackQuery, state: FSMContext):
     year = callback_query.data.split(":")[1]
@@ -72,7 +71,6 @@ async def process_start_year(callback_query: types.CallbackQuery, state: FSMCont
     await state.set_state("select_start_hour")
 
 
-# Обработчик выбора часа начала
 @router.callback_query(lambda c: c.data.startswith("start_hour:"))
 async def process_start_hour(callback_query: types.CallbackQuery, state: FSMContext):
     hour = callback_query.data.split(":")[1]
@@ -82,7 +80,6 @@ async def process_start_hour(callback_query: types.CallbackQuery, state: FSMCont
     await state.set_state("select_start_minute")
 
 
-# Обработчик выбора минут начала
 @router.callback_query(lambda c: c.data.startswith("start_minute:"))
 async def process_start_minute(callback_query: types.CallbackQuery, state: FSMContext):
     minute = callback_query.data.split(":")[1]
@@ -92,7 +89,7 @@ async def process_start_minute(callback_query: types.CallbackQuery, state: FSMCo
     await state.set_state("select_end_day")
 
 
-# Обработчик выбора дня окончания
+# Обработчики выбора даты окончания
 @router.callback_query(lambda c: c.data.startswith("end_day:"))
 async def process_end_day(callback_query: types.CallbackQuery, state: FSMContext):
     day = callback_query.data.split(":")[1]
@@ -102,7 +99,6 @@ async def process_end_day(callback_query: types.CallbackQuery, state: FSMContext
     await state.set_state("select_end_month")
 
 
-# Обработчик выбора месяца окончания
 @router.callback_query(lambda c: c.data.startswith("end_month:"))
 async def process_end_month(callback_query: types.CallbackQuery, state: FSMContext):
     month = callback_query.data.split(":")[1]
@@ -112,7 +108,6 @@ async def process_end_month(callback_query: types.CallbackQuery, state: FSMConte
     await state.set_state("select_end_year")
 
 
-# Обработчик выбора года окончания
 @router.callback_query(lambda c: c.data.startswith("end_year:"))
 async def process_end_year(callback_query: types.CallbackQuery, state: FSMContext):
     year = callback_query.data.split(":")[1]
@@ -122,7 +117,6 @@ async def process_end_year(callback_query: types.CallbackQuery, state: FSMContex
     await state.set_state("select_end_hour")
 
 
-# Обработчик выбора часа окончания
 @router.callback_query(lambda c: c.data.startswith("end_hour:"))
 async def process_end_hour(callback_query: types.CallbackQuery, state: FSMContext):
     hour = callback_query.data.split(":")[1]
@@ -132,82 +126,168 @@ async def process_end_hour(callback_query: types.CallbackQuery, state: FSMContex
     await state.set_state("select_end_minute")
 
 
-# Обработчик выбора минут окончания
 @router.callback_query(lambda c: c.data.startswith("end_minute:"))
 async def process_end_minute(callback_query: types.CallbackQuery, state: FSMContext):
     minute = callback_query.data.split(":")[1]
     logger.info(f"Выбраны минуты окончания: {minute}")
     await state.update_data(end_minute=minute)
-    logger.info(f"Все данные для бронирования: {await state.get_data()}")
-    # Здесь можно добавить логику для проверки доступных залов или перехода к следующему шагу.
+    await callback_query.message.edit_text("Введите количество гостей:")
+    await state.set_state("enter_guests")
 
 
-    # Формируем данные для проверки доступных залов
+
+# =======================Обработчик ввода количества гостей====================
+@router.message(StateFilter("enter_guests"))
+async def process_guests_input(message: types.Message, state: FSMContext):
+    """
+    Обработчик ввода количества гостей, проверки параметров и запроса доступных залов.
+    """
+    try:
+        # Проверяем ввод количества гостей
+        guests_count = int(message.text.strip())
+        if guests_count <= 0:
+            raise ValueError("Количество гостей должно быть положительным числом.")
+    except ValueError:
+        await message.reply("⚠️ Пожалуйста, введите корректное количество гостей (положительное целое число).")
+        return
+
+    # Сохраняем количество гостей в состоянии
+    await state.update_data(guests_count=guests_count)
     user_data = await state.get_data()
-    start_datetime = f"{user_data['start_year']}-{user_data['start_month']}-{user_data['start_day']} {user_data['start_hour']}:{user_data['start_minute']}"
-    end_datetime = f"{user_data['end_year']}-{user_data['end_month']}-{user_data['end_day']} {user_data['end_hour']}:{user_data['end_minute']}"
-    logger.info(f"Начало: {start_datetime}, Окончание: {end_datetime}")
 
-    # Проверяем доступные залы через API
+    try:
+        # Формируем параметры времени
+        start_hour = int(user_data.get("start_hour", 0))
+        end_hour = int(user_data.get("end_hour", 0))
+        start_minute = int(user_data.get("start_minute", 0))
+        end_minute = int(user_data.get("end_minute", 0))
+
+        # Проверяем корректность времени
+        if not (0 <= start_hour <= 23 and 0 <= end_hour <= 23 and 0 <= start_minute <= 59 and 0 <= end_minute <= 59):
+            await message.reply("⚠️ Ошибка: Часы должны быть в диапазоне 0-23, а минуты — в диапазоне 0-59. Пожалуйста, проверьте данные.")
+            return
+
+        # Формируем строки даты и времени
+        start_datetime = f"{user_data['start_year']}-{user_data['start_month']:02}-{user_data['start_day']:02} {start_hour:02}:{start_minute:02}"
+        end_datetime = f"{user_data['end_year']}-{user_data['end_month']:02}-{user_data['end_day']:02} {end_hour:02}:{end_minute:02}"
+    except KeyError as e:
+        await message.reply(f"⚠️ Ошибка формирования параметров времени: отсутствует {e}. Пожалуйста, начните процесс заново с /start.")
+        return
+
+    # Логируем параметры для отладки
+    logger.info(f"Параметры запроса: start={start_datetime}, end={end_datetime}, guests={guests_count}")
+
+    # Отправляем запрос к серверу
     async with ClientSession() as session:
-        async with session.get(f"{DJANGO_API_BASE_URL}check-availability/", params={
-            "start": start_datetime,
-            "end": end_datetime
-        }) as response:
+        try:
+            response = await session.get(f"{DJANGO_API_BASE_URL}check-availability/", params={
+                "start": start_datetime,
+                "end": end_datetime,
+                "guests": guests_count
+            })
+
             if response.status == 200:
+                # Обрабатываем успешный ответ от сервера
                 response_data = await response.json()
                 halls = response_data.get("spaces", [])
-                logger.info(f"Доступные залы: {halls}")
                 if halls:
-                    await callback_query.message.edit_text("Выберите доступный зал: 🏢", reply_markup=create_halls_keyboard(halls))
+                    await message.reply("🏢 Доступные залы найдены! Выберите один из них:", reply_markup=create_halls_keyboard(halls))
                     await state.set_state("hall_selection")
                 else:
-                    await callback_query.message.edit_text("Нет доступных залов на указанное время.")
-                    await state.clear()
+                    await message.reply("⚠️ Нет доступных залов для указанного времени. Попробуйте изменить параметры бронирования.")
+            elif response.status == 400:
+                await message.reply("⚠️ Некорректный запрос. Проверьте параметры и попробуйте снова.")
+                logger.warning(f"400 Bad Request. Параметры: start={start_datetime}, end={end_datetime}, guests={guests_count}")
             else:
-                logger.error(f"Ошибка API: статус {response.status}")
-                await callback_query.message.edit_text("Произошла ошибка при получении данных от сервера.")
-                await state.clear()
+                await message.reply("⚠️ Произошла ошибка при проверке залов. Попробуйте позже.")
+                logger.error(f"Ошибка сервера: статус {response.status}. Параметры: start={start_datetime}, end={end_datetime}, guests={guests_count}")
+        except Exception as e:
+            await message.reply(f"❌ Ошибка соединения с сервером: {str(e)}")
+            logger.error(f"Ошибка при отправке запроса: {str(e)}")
 
-
-# Обработчик выбора зала
+#=========================== Обработчик выбора зала==========================
 @router.callback_query(lambda c: c.data.startswith("hall:"))
 async def process_hall_selection(callback_query: types.CallbackQuery, state: FSMContext):
-    hall_id = callback_query.data.split(":")[1]
-    logger.info(f"Выбран зал: {hall_id}")
-    await state.update_data(selected_hall=hall_id)
-    await callback_query.message.edit_text("Укажите ваши пожелания:")
-    await state.set_state("preferences")
+    """
+    Обработчик выбора зала.
+    """
+    try:
+        # Извлечение ID выбранного зала из callback_data
+        hall_id = callback_query.data.split(":")[1]
+        await state.update_data(selected_hall=hall_id)
+
+        # Получаем данные о предпочтениях (могут быть из базы данных или заранее определены)
+        preferences = ["Wi-Fi", "Проектор", "Микрофоны", "Кофе-брейк"]  # Пример списка предпочтений
+
+        # Проверка типа данных предпочтений
+        if not isinstance(preferences, list):
+            raise ValueError("Предпочтения должны быть списком.")
+
+        # Генерация клавиатуры и вывод доступных предпочтений
+        await callback_query.message.edit_text(
+            "Выберите дополнительные предпочтения:",
+            reply_markup=create_preferences_keyboard(preferences)
+        )
+
+        # Устанавливаем новое состояние
+        await state.set_state("preferences_selection")
+
+    except ValueError as ve:
+        # Обработка ошибок связанных с типами данных
+        await callback_query.message.reply(f"⚠️ Ошибка: {str(ve)}. Проверьте данные.")
+        logger.error(f"Ошибка данных: {str(ve)}")
+    except IndexError:
+        # Обработка ошибки при парсинге callback_data
+        await callback_query.message.reply("⚠️ Ошибка: некорректный формат callback_data.")
+        logger.error("Некорректный формат callback_data. Ожидается формат 'hall:<id>'.")
+    except Exception as e:
+        # Общая обработка ошибок
+        await callback_query.message.reply(f"❌ Произошла ошибка: {str(e)}")
+        logger.error(f"Неожиданная ошибка в process_hall_selection: {str(e)}")
+
+
+
+#======================== Обработчик выбора предпочтений=======================
+@router.callback_query(lambda c: c.data.startswith("preference:"))
+async def process_preferences_selection(callback_query: types.CallbackQuery, state: FSMContext):
+    preference_id = callback_query.data.split(":")[1]
+    user_data = await state.get_data()
+
+    # Добавляем предпочтение в список
+    preferences = user_data.get("preferences", [])
+    preferences.append(preference_id)
+    await state.update_data(preferences=preferences)
+
+    await callback_query.answer("Предпочтение добавлено!")
+    await callback_query.message.edit_text("Выберите ещё одно предпочтение или завершите выбор.", reply_markup=create_preferences_keyboard())
+
 
 # Обработчик завершения бронирования
-@router.message(StateFilter("preferences"))  # Используем StateFilter
+@router.message(StateFilter("preferences_selection"))
 async def finalize_booking(message: types.Message, state: FSMContext):
     """
     Сбор всех данных и завершение бронирования.
     """
-    # Получаем данные от пользователя
     user_data = await state.get_data()
-    user_data['preferences'] = message.text.strip() if message.text else "Без предпочтений"
-    logger.info(f"Данные для бронирования: {user_data}")
 
-    # Отправляем данные на сервер
     async with ClientSession() as session:
-        async with session.post(f"{DJANGO_API_BASE_URL}create-booking/", json=user_data) as response:
+        try:
+            # Формируем запрос на создание бронирования
+            response = await session.post(f"{DJANGO_API_BASE_URL}create-booking/", json=user_data)
+            
             if response.status == 201:
-                await message.reply("Ваше бронирование успешно создано!")
+                # Успешное создание бронирования
+                await message.reply("🎉 Ваше бронирование успешно создано!")
                 logger.info("Бронирование успешно завершено.")
             else:
-                logger.error(f"Ошибка при создании бронирования: {response.status}")
-                await message.reply("Произошла ошибка при создании бронирования. Попробуйте ещё раз.")
+                # Ошибка при создании бронирования
+                logger.error(f"Ошибка при создании бронирования: статус {response.status}")
+                await message.reply("⚠️ Произошла ошибка при создании бронирования. Попробуйте ещё раз.")
 
-    await state.clear()
+        except Exception as e:
+            # Общий обработчик ошибок
+            logger.error(f"Не удалось завершить бронирование: {e}")
+            await message.reply("⚠️ Произошла внутренняя ошибка. Пожалуйста, попробуйте позже.")
 
-# Обработчик отмены бронирования
-@router.callback_query(lambda c: c.data == "cancel")
-async def handle_cancel(callback_query: types.CallbackQuery, state: FSMContext):
-    """
-    Обработка действия отмены.
-    """
-    logger.info("Операция отменена пользователем.")
+    # Очистка состояния
     await state.clear()
-    await callback_query.message.edit_text("Операция отменена. Начните заново с /start.")
