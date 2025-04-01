@@ -1,6 +1,6 @@
 from django.db import models
 from datetime import datetime
-from .space_models import Space, Option  # Импорт моделей Space и Option
+from .space_models import Space  # Импорт моделей Space и Option
 
 
 
@@ -23,9 +23,3 @@ class PriceSpace (PriceAbstract):
         verbose_name = "Цены на помещения"
 
 
-class PriceOption (PriceAbstract):
-    option_id = models.ForeignKey(to='Option', on_delete=models.CASCADE,
-                                  related_name='price_of_option')
-
-    class Meta:
-        verbose_name = 'Цены на дополнительные услуги'

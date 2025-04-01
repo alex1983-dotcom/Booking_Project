@@ -20,17 +20,13 @@ class Space(AbstractItem):
     """
     Модель, представляющая пространство для бронирования.
     """
-    capacity = models.PositiveIntegerField(default=1, help_text='Количество мест', verbose_name='Количество мест')  # Вместимость пространства
-    area = models.PositiveIntegerField(default=1, help_text='Площадь', verbose_name='Площадь') # Полощадь в метрах квадратных
+    capacity = models.PositiveIntegerField(default=1, help_text='Количество мест', 
+                                           verbose_name='Количество мест')  # Вместимость пространства
+    area = models.PositiveIntegerField(default=1, help_text='Площадь', 
+                                       verbose_name='Площадь') # Полощадь в метрах квадратных
 
     class Meta:
         verbose_name = "Пространство"
         verbose_name_plural = "Пространства"
 
 
-class Option(AbstractItem):
-    all_count = models.PositiveIntegerField(default=1, help_text='Количество', verbose_name='Количество')
-
-    class Meta:
-        verbose_name = 'Дополнительная опция'
-        verbose_name_plural = 'Дополнительные опции'
