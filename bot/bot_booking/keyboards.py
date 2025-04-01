@@ -89,15 +89,31 @@ def create_guests_keyboard(max_guests: int, prefix: str):
 
 
 # Выбор дополнительных предпочтений
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 def create_preferences_keyboard(preferences):
     """
-    Создает клавиатуру для выбора дополнительных предпочтений из базы данных.
+    Генерирует клавиатуру с предпочтениями и кнопкой завершения.
+    :param preferences: Список предпочтений (формат: список словарей с ключами `id` и `name`).
+    :return: InlineKeyboardMarkup
     """
+    # Формируем кнопки для предпочтений
     buttons = [
-        [InlineKeyboardButton(text=f"✅ {pref['name']}", callback_data=f"preference:{pref['id']}")] for pref in preferences
+        InlineKeyboardButton(
+            text=f"✅ {pref['name']}", callback_data=f"preference:{pref['id']}"
+        )
+        for pref in preferences if isinstance(pref, dict)  # Убедимся, что pref — это словарь
     ]
-    buttons.append([InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    # Добавляем кнопку "Завершить выбор"
+    buttons.append(
+        InlineKeyboardButton(
+            text="Завершить выбор", callback_data="finish_selection"
+        )
+    )
+
+    return InlineKeyboardMarkup(inline_keyboard=[buttons])
+
 
 
 # Обратная связь

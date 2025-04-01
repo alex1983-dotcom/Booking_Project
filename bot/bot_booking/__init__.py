@@ -1,6 +1,6 @@
 # Импорт настроек
 from .config import bot, storage, logger, DJANGO_API_BASE_URL
-from .handlers import router
+from .handlers import routers
 from .utils import some_helper_function  
 
 # Импорт клавиатур

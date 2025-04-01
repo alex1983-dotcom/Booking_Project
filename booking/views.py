@@ -5,6 +5,10 @@ from .models import Space, Booking, AdditionalPreference
 from .serializers import SpaceSerializer, BookingSerializer, PreferenceSerializer
 from datetime import datetime
 from django.utils.timezone import make_aware
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class CheckAvailabilityAPIView(APIView):
     """
@@ -110,10 +114,12 @@ class GetPreferencesAPIView(APIView):
     APIView для получения доступных дополнительных предпочтений.
     """
     def get(self, request):
+        logger.info(f"Получен запрос: {request.path}")
         try:
             # Получаем все доступные предпочтения
             preferences = AdditionalPreference.objects.all()
             serializer = PreferenceSerializer(preferences, many=True)
             return Response({"preferences": serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
+            logger.error(f"Ошибка сервера: {str(e)}")
             return Response({"error": f"Ошибка сервера: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
