@@ -25,6 +25,6 @@ __all__ = [
     "create_hour_keyboard",
     "create_minute_keyboard",
     "create_halls_keyboard",
-    "router",
+    "routers",
     "some_helper_function",  # Утилиты
 ]

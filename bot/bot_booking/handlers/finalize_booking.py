@@ -1,37 +1,38 @@
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
-from ..config import logger, DJANGO_API_BASE_URL
-from aiogram.filters import StateFilter
 from aiohttp import ClientSession
+from ..config import logger, DJANGO_API_BASE_URL
+from ..keyboards import (
+    create_finish_keyboard,
+    create_contact_input_keyboard,
+    create_promo_code_keyboard,
+    create_finish_contact_keyboard
+)
 
 router = Router()
 
-# =======================Обработчик завершения бронирования ====================
-@router.message(StateFilter("preferences_selection"))
-async def finalize_booking(message: types.Message, state: FSMContext):
+@router.callback_query(lambda c: c.data == "finalize_booking")
+async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContext):
     """
-    Сбор всех данных и завершение бронирования.
+    Обработчик для завершения бронирования.
     """
     user_data = await state.get_data()
 
     async with ClientSession() as session:
         try:
-            # Формируем запрос на создание бронирования
-            response = await session.post(f"{DJANGO_API_BASE_URL}create-booking/", json=user_data)
-            
-            if response.status == 201:
-                # Успешное создание бронирования
-                await message.reply("🎉 Ваше бронирование успешно создано!")
-                logger.info("Бронирование успешно завершено.")
-            else:
-                # Ошибка при создании бронирования
-                logger.error(f"Ошибка при создании бронирования: статус {response.status}")
-                await message.reply("⚠️ Произошла ошибка при создании бронирования. Попробуйте ещё раз.")
-
+            # Отправляем запрос для создания бронирования
+            async with session.post(f"{DJANGO_API_BASE_URL}create-booking/", json=user_data) as response:
+                if response.status == 201:
+                    await callback_query.message.edit_text("🎉 Ваше бронирование успешно завершено!")
+                    logger.info("Бронирование успешно завершено.")
+                else:
+                    logger.error(f"Ошибка при создании бронирования. Статус: {response.status}")
+                    await callback_query.message.edit_text(
+                        "⚠️ Произошла ошибка при создании бронирования. Попробуйте ещё раз."
+                    )
         except Exception as e:
-            # Общий обработчик ошибок
-            logger.error(f"Не удалось завершить бронирование: {e}")
-            await message.reply("⚠️ Произошла внутренняя ошибка. Пожалуйста, попробуйте позже.")
+            logger.error(f"Ошибка связи с сервером: {e}")
+            await callback_query.message.edit_text("❌ Не удалось завершить бронирование. Попробуйте позже.")
 
-    # Очистка состояния
+    # Очищаем состояние
     await state.clear()

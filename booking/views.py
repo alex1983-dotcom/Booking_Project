@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Space, Booking, AdditionalPreference
+from .models import Space, Booking, AdditionalPreference, Feedback
 from .serializers import SpaceSerializer, BookingSerializer, PreferenceSerializer
 from datetime import datetime
 from django.utils.timezone import make_aware
@@ -123,3 +123,43 @@ class GetPreferencesAPIView(APIView):
         except Exception as e:
             logger.error(f"Ошибка сервера: {str(e)}")
             return Response({"error": f"Ошибка сервера: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Feedback
+from .serializers import FeedbackSerializer
+import logging
+
+logger = logging.getLogger(__name__)
+
+class FeedbackAPIView(APIView):
+    """
+    APIView для работы с контактами заказчиков.
+    """
+    def get(self, request):
+        """
+        Получение списка всех контактов.
+        """
+        try:
+            feedbacks = Feedback.objects.all()
+            serializer = FeedbackSerializer(feedbacks, many=True)
+            return Response({"feedbacks": serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Ошибка сервера: {str(e)}")
+            return Response({"error": f"Ошибка сервера: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def post(self, request):
+        """
+        Создание нового контакта.
+        """
+        serializer = FeedbackSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                serializer.save()
+                return Response({"status": "success", "feedback": serializer.data}, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                logger.error(f"Ошибка сервера: {str(e)}")
+                return Response({"error": f"Ошибка сервера: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"status": "error", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)

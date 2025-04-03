@@ -1,7 +1,7 @@
 import asyncio
 from aiogram import Dispatcher
 from bot_booking import bot, storage
-from bot_booking.handlers import routers  # Импорт маршрутизаторов
+from bot_booking.handlers import routers
 from bot_booking.config import logger
 
 async def main():

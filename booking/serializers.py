@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Space, Booking, AdditionalPreference
+from .models import Space, Booking, AdditionalPreference, Feedback
 
 class SpaceSerializer(serializers.ModelSerializer):
     """
@@ -33,3 +33,10 @@ class PreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdditionalPreference
         fields = '__all__'
+
+
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = ['id', 'name', 'phone_number', 'email', 'promo_code', 'messengers']

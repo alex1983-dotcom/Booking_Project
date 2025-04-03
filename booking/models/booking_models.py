@@ -32,6 +32,7 @@ class Feedback(models.Model):
     name = models.CharField(max_length=255, verbose_name='Имя')
     phone_number = models.CharField(max_length=20, verbose_name='Номер телефона')
     email = models.EmailField(verbose_name='Электронная почта')
+    promo_code = models.CharField(max_length=50, blank=True, null=True, verbose_name='Промокод')
     messengers = models.IntegerField(
         choices=Messenger.choices,
         default=Messenger.VIBER,
@@ -59,8 +60,6 @@ class Booking(models.Model):
     event_format = models.CharField(max_length=100, verbose_name='Формат мероприятия')  # Формат мероприятия
     guests_count = models.PositiveIntegerField(verbose_name='Количество гостей')  # Количество гостей
     preferences = models.ManyToManyField(AdditionalPreference, blank=True, verbose_name='Дополнительные опции')  # Дополнительные предпочтения
-    promo_code = models.CharField(max_length=50, blank=True, null=True, verbose_name='Промокод')  # Промокод (опционально)
-    contact_method = models.CharField(max_length=50, verbose_name='Контактные данные')  # Контактные данные
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')  # Дата создания записи
     status = models.IntegerField(
         choices=BookingStatus.choices,
@@ -81,7 +80,7 @@ class Booking(models.Model):
         ordering = ['event_start_date']
 
     def __str__(self):
-        return f"Бронирование {self.space.name} с {self.event_start_date.strftime('%d.%m.%Y %H:%M')} по {self.event_end_date.strftime('%d.%m.%Y %H:%M')} | Статус: {self.get_status_display()}"
+        return f"Бронирование | {self.space.name} | с {self.event_start_date.strftime('%d.%m.%Y %H:%M')} по {self.event_end_date.strftime('%d.%m.%Y %H:%M')} | Статус: {self.get_status_display()}"
 
     def get_status_display(self):
         return dict(self.BookingStatus.choices).get(self.status, 'Неизвестно')

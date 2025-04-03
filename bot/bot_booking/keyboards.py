@@ -88,32 +88,62 @@ def create_guests_keyboard(max_guests: int, prefix: str):
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-# Выбор дополнительных предпочтений
+
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-def create_preferences_keyboard(preferences):
+def create_preferences_keyboard(all_preferences):
     """
-    Генерирует клавиатуру с предпочтениями и кнопкой завершения.
-    :param preferences: Список предпочтений (формат: список словарей с ключами `id` и `name`).
+    Генерирует клавиатуру с предпочтениями в виде столбца и кнопкой завершения.
+    :param all_preferences: Список всех доступных предпочтений (формат: словари с ключами `id` и `name`).
     :return: InlineKeyboardMarkup
     """
-    # Формируем кнопки для предпочтений
+    # Генерируем кнопки предпочтений
     buttons = [
-        InlineKeyboardButton(
-            text=f"✅ {pref['name']}", callback_data=f"preference:{pref['id']}"
-        )
-        for pref in preferences if isinstance(pref, dict)  # Убедимся, что pref — это словарь
+        [InlineKeyboardButton(text=pref["name"], callback_data=f"preference:{pref['name']}")]
+        for pref in all_preferences
     ]
 
-    # Добавляем кнопку "Завершить выбор"
-    buttons.append(
-        InlineKeyboardButton(
-            text="Завершить выбор", callback_data="finish_selection"
-        )
-    )
+    # Добавляем кнопку "Завершить выбор" отдельной строкой
+    buttons.append([InlineKeyboardButton(text="Завершить выбор", callback_data="finish_selection")])
 
-    return InlineKeyboardMarkup(inline_keyboard=[buttons])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+def create_contact_input_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Ввести контактные данные", callback_data="start_contact_input")]
+    ])
+
+def create_finish_contact_keyboard():
+    """
+    Клавиатура для завершения ввода контактных данных.
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Завершить ввод данных", callback_data="finish_contact_input")]
+    ])
+
+
+def create_promo_code_keyboard():
+    """
+    Клавиатура для ввода или пропуска промокода.
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Ввести промокод", callback_data="enter_promo_code")],
+        [InlineKeyboardButton(text="Пропустить", callback_data="skip_promo_code")]
+    ])
+
+
+def create_messengers_keyboard():
+    """
+    Клавиатура для выбора мессенджеров.
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Telegram", callback_data="messenger:telegram")],
+        [InlineKeyboardButton(text="WhatsApp", callback_data="messenger:whatsapp")],
+        [InlineKeyboardButton(text="Viber", callback_data="messenger:viber")],
+        [InlineKeyboardButton(text="Пропустить", callback_data="skip_messenger")]
+    ])
 
 
 # Обратная связь
@@ -128,3 +158,18 @@ def create_feedback_keyboard():
         [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+
+
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+def create_finish_keyboard():
+    """
+    Клавиатура для действий после завершения ввода данных.
+    """
+    buttons = [
+        InlineKeyboardButton(text="Вернуться в меню", callback_data="main_menu"),
+        InlineKeyboardButton(text="Продолжить бронирование", callback_data="finalize_booking"),
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=[buttons])

@@ -25,7 +25,7 @@ class BookingForm(forms.ModelForm):
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
     form = BookingForm  # Подключаем пользовательскую форму
-    list_display = ('id', 'space', 'contact', 'event_start_date', 'event_end_date', 'guests_count', 'status')
+    list_display = ('id', 'space', 'created_at', 'contact', 'event_start_date', 'event_end_date', 'guests_count', 'status')
     search_fields = ('space__name', 'event_format')
     list_filter = ('contact','event_start_date', 'status')
     filter_horizontal = ('preferences',)  # Интерфейс для выбора предпочтений
@@ -40,5 +40,7 @@ class PriceSpaceAdmin(admin.ModelAdmin):
 @admin.register(Feedback)
 class FeedbackAdmin(admin.ModelAdmin):
     form = FeedbackAdminForm  
-    list_display = ('id', 'name', 'phone_number', 'email')  # Настройка отображения
-    search_fields = ('name', 'phone_number', 'email')  # Поля для поиска
+    list_display = ('id', 'name', 'phone_number', 'promo_code', 'email')  # Настройка отображения
+    search_fields = ('name', 'phone_number', 'promo_code', 'email')  # Поля для поиска
+
+

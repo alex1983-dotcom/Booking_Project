@@ -27,22 +27,34 @@ async def process_guests_input(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
 
     try:
-        # Формируем параметры времени
+        # Получение параметров даты и времени
+        start_month = int(user_data.get("start_month", 0))
+        end_month = int(user_data.get("end_month", 0))
         start_hour = int(user_data.get("start_hour", 0))
         end_hour = int(user_data.get("end_hour", 0))
         start_minute = int(user_data.get("start_minute", 0))
         end_minute = int(user_data.get("end_minute", 0))
 
-        # Проверяем корректность времени
+        # Проверка корректности месяца
+        if not (1 <= start_month <= 12) or not (1 <= end_month <= 12):
+            await message.reply("⚠️ Ошибка: Месяц должен быть в диапазоне 1–12. Проверьте введённые данные.")
+            return
+
+        # Проверка корректности времени
         if not (0 <= start_hour <= 23 and 0 <= end_hour <= 23 and 0 <= start_minute <= 59 and 0 <= end_minute <= 59):
-            await message.reply("⚠️ Ошибка: Часы должны быть в диапазоне 0-23, а минуты — в диапазоне 0-59. Пожалуйста, проверьте данные.")
+            await message.reply("⚠️ Ошибка: Часы должны быть в диапазоне 0–23, а минуты — 0–59. Проверьте введённые данные.")
             return
 
         # Формируем строки даты и времени
-        start_datetime = f"{user_data['start_year']}-{user_data['start_month']:02}-{user_data['start_day']:02} {start_hour:02}:{start_minute:02}"
-        end_datetime = f"{user_data['end_year']}-{user_data['end_month']:02}-{user_data['end_day']:02} {end_hour:02}:{end_minute:02}"
+        start_datetime = f"{user_data['start_year']}-{start_month:02}-{user_data['start_day']:02} {start_hour:02}:{start_minute:02}"
+        end_datetime = f"{user_data['end_year']}-{end_month:02}-{user_data['end_day']:02} {end_hour:02}:{end_minute:02}"
     except KeyError as e:
-        await message.reply(f"⚠️ Ошибка формирования параметров времени: отсутствует {e}. Пожалуйста, начните процесс заново с /start.")
+        await message.reply(f"⚠️ Ошибка: отсутствует ключ {e}. Пожалуйста, начните процесс заново с команды /start.")
+        logger.error(f"KeyError: отсутствует ключ {e} в состоянии пользователя.")
+        return
+    except ValueError as e:
+        await message.reply(f"⚠️ Ошибка: неверный формат данных. {e}")
+        logger.error(f"ValueError: неверный формат данных. {e}")
         return
 
     # Логируем параметры для отладки
@@ -75,4 +87,3 @@ async def process_guests_input(message: types.Message, state: FSMContext):
         except Exception as e:
             await message.reply(f"❌ Ошибка соединения с сервером: {str(e)}")
             logger.error(f"Ошибка при отправке запроса: {str(e)}")
-

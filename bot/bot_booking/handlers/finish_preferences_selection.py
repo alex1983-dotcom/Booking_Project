@@ -1,26 +1,37 @@
 from aiogram import Router, types
-from ..config import logger
 from aiogram.fsm.context import FSMContext
+from ..keyboards import create_contact_input_keyboard
+from ..config import logger
 
 router = Router()
 
 @router.callback_query(lambda c: c.data == "finish_selection")
 async def finish_preferences_selection(callback_query: types.CallbackQuery, state: FSMContext):
+    """
+    Завершение выбора предпочтений и переход к вводу контактных данных.
+    """
     # Получаем данные из состояния
     user_data = await state.get_data()
     preferences = user_data.get("preferences", [])
 
-    # Проверяем, является ли элемент словарём
-    if all(isinstance(pref, dict) for pref in preferences):
-        preferences_names = "\n".join([pref['name'] for pref in preferences])
+    # Формируем итоговое сообщение о выбранных предпочтениях
+    if preferences:
+        preferences_names = "\n".join([pref["name"] for pref in preferences])
+        message = f"✅ Вы выбрали следующие предпочтения:\n{preferences_names}"
     else:
-        preferences_names = "\n".join(preferences)  # Если это список строк
+        message = "❌ Вы не выбрали никаких предпочтений."
 
-    # Формируем итоговое сообщение
-    message = f"Вы выбрали следующие предпочтения:\n{preferences_names}" if preferences else "Вы не выбрали предпочтений."
-
-    # Отправляем итоговое сообщение
+    # Обновляем сообщение с итогами выбора
     await callback_query.message.edit_text(message)
 
-    # Сбрасываем состояние или переводим пользователя в другой этап
-    await state.clear()
+    # Переход к следующему этапу с кнопкой
+    await callback_query.message.reply(
+        "Теперь перейдём к вводу контактных данных.",
+        reply_markup=create_contact_input_keyboard()
+    )
+    
+    # Устанавливаем состояние для ввода контактных данных
+    await state.set_state("start_contact_input")
+
+    # Логирование для отладки
+    logger.info("Переход к состоянию 'contact_input'.")
