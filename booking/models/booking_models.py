@@ -1,10 +1,11 @@
 from django.db import models
 from datetime import datetime
-from .space_models import Space  
 from django.core.exceptions import ValidationError
 
-
 class AdditionalPreference(models.Model):
+    """
+    Модель для дополнительных предпочтений.
+    """
     name = models.CharField(max_length=50, verbose_name='Дополнительные опции')
 
     def delete(self, *args, **kwargs):
@@ -12,23 +13,24 @@ class AdditionalPreference(models.Model):
         if Booking.objects.filter(preferences__id=self.id).exists():
             raise Exception("Невозможно удалить дополнительные опции, оно используется в бронированиях.")
         super().delete(*args, **kwargs)
-    
-    
-    
+
     class Meta:
         verbose_name = "Дополнительные опции"
         verbose_name_plural = "Дополнительные опции"
-    
+
     def __str__(self):
-            return self.name
+        return self.name
+
 
 class Feedback(models.Model):
-    """Модель для обратной связи(контакты для связи, которые оставляет заказчик)"""
+    """
+    Модель для обратной связи (контакты для связи заказчика).
+    """
     class Messenger(models.IntegerChoices):
         VIBER = 1, 'Viber'
         TELEGRAM = 2, 'Telegram'
         WHATSAPP = 3, 'WhatsApp'
-    
+
     name = models.CharField(max_length=255, verbose_name='Имя')
     phone_number = models.CharField(max_length=20, verbose_name='Номер телефона')
     email = models.EmailField(verbose_name='Электронная почта')
@@ -44,7 +46,8 @@ class Feedback(models.Model):
         verbose_name_plural = "Контакты заказчика"
 
     def __str__(self):
-      return f"{self.name} - {self.phone_number}"  
+        return f"{self.name} - {self.phone_number}"
+
 
 class Booking(models.Model):
     """
@@ -54,25 +57,49 @@ class Booking(models.Model):
         AVAILABLE = 1, 'Свободно'
         BOOKED = 2, 'Забронировано'
 
-    space = models.ForeignKey(Space, on_delete=models.SET_NULL, null=True, verbose_name='Пространство')  # Связь с пространством
-    event_start_date = models.DateTimeField(default=datetime.now, verbose_name='Дата начала')  # Дата и время начала бронирования
-    event_end_date = models.DateTimeField(verbose_name='Дата окончания')  # Дата и время окончания бронирования
-    event_format = models.CharField(max_length=100, verbose_name='Формат мероприятия')  # Формат мероприятия
-    guests_count = models.PositiveIntegerField(verbose_name='Количество гостей')  # Количество гостей
-    preferences = models.ManyToManyField(AdditionalPreference, blank=True, verbose_name='Дополнительные опции')  # Дополнительные предпочтения
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')  # Дата создания записи
+    space = models.ForeignKey(
+        'Space', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        verbose_name='Пространство'
+    )  # Обязательное поле, связанное с моделью Space
+    event_start_date = models.DateTimeField(
+        default=datetime.now, 
+        verbose_name='Дата начала'
+    )  # Обязательное поле, дата начала бронирования
+    event_end_date = models.DateTimeField(
+        verbose_name='Дата окончания'
+    )  # Обязательное поле, дата окончания бронирования
+    event_format = models.CharField(
+        max_length=100, 
+        verbose_name='Формат мероприятия',
+        blank=True, 
+        null=True 
+    )  # Обязательное поле, описание формата
+    guests_count = models.PositiveIntegerField(
+        verbose_name='Количество гостей'
+    )  # Обязательное поле, число гостей
+    preferences = models.ManyToManyField(
+        AdditionalPreference, 
+        blank=True, 
+        verbose_name='Дополнительные опции'
+    )  # Поле для дополнительных опций, не обязательное
+    created_at = models.DateTimeField(
+        auto_now_add=True, 
+        verbose_name='Дата создания'
+    )  # Поле с автоматической установкой даты создания
     status = models.IntegerField(
         choices=BookingStatus.choices,
         default=BookingStatus.AVAILABLE,
         verbose_name="Статус"
-    )
+    )  # Поле статуса бронирования
     contact = models.ForeignKey(
         Feedback,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name='Контакт заказчика'
-    )
+    )  # Поле контакта, связанное с моделью Feedback
 
     class Meta:
         verbose_name = "Бронирование"
@@ -80,21 +107,21 @@ class Booking(models.Model):
         ordering = ['event_start_date']
 
     def __str__(self):
-        return f"Бронирование | {self.space.name} | с {self.event_start_date.strftime('%d.%m.%Y %H:%M')} по {self.event_end_date.strftime('%d.%m.%Y %H:%M')} | Статус: {self.get_status_display()}"
+        return (
+            f"Бронирование | {self.space.name} | с {self.event_start_date.strftime('%d.%m.%Y %H:%M')} "
+            f"по {self.event_end_date.strftime('%d.%m.%Y %H:%M')} | Статус: {self.get_status_display()}"
+        )
 
-    def get_status_display(self):
-        return dict(self.BookingStatus.choices).get(self.status, 'Неизвестно')
-
-   
     def clean(self):
         """
-        Проверяем, что количество гостей не превышает вместимость пространства.
+        Проверка: количество гостей не должно превышать вместимость пространства.
         """
         if self.space and self.guests_count > self.space.capacity:
             raise ValidationError(
                 f"Количество гостей ({self.guests_count}) превышает вместимость пространства ({self.space.capacity})."
             )
-        
+
+
 
 
 

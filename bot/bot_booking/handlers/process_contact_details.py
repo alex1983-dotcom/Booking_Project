@@ -1,13 +1,15 @@
 from aiogram import Router, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
-from aiogram.filters import StateFilter  # Для фильтрации состояний
+from aiogram.filters import StateFilter
+from aiohttp import ClientSession
 from ..config import logger
 from ..keyboards import (
     create_finish_keyboard,
     create_contact_input_keyboard,
     create_promo_code_keyboard,
-    create_finish_contact_keyboard
+    create_finish_contact_keyboard,
+    create_messengers_keyboard
 )
 
 API_URL = "http://127.0.0.1:8000/api/booking/"
@@ -23,8 +25,10 @@ async def start_contact_input(callback_query: types.CallbackQuery, state: FSMCon
     """
     logger.info(f"Текущее состояние FSM: {await state.get_state()}")
 
-    await callback_query.message.reply("Введите ваше имя:")
+    # Обновленное сообщение с эмодзи пера
+    await callback_query.message.reply("✒️ Введите ваше имя:")
     await state.set_state("enter_name")
+
 
 
 @router.message(StateFilter("enter_name"))
@@ -35,7 +39,7 @@ async def enter_name(message: types.Message, state: FSMContext):
     logger.info(f"Имя введено: {message.text}")
     await state.update_data(name=message.text.strip())
     logger.info(f"Состояние после ввода имени: {await state.get_data()}")
-    await message.reply("Введите ваш номер телефона:")
+    await message.reply("✒️ Введите ваш номер телефона:")
     await state.set_state("enter_phone")
 
 
@@ -47,7 +51,7 @@ async def enter_phone(message: types.Message, state: FSMContext):
     logger.info(f"Телефон введён: {message.text}")
     await state.update_data(phone=message.text.strip())
     logger.info(f"Состояние после ввода телефона: {await state.get_data()}")
-    await message.reply("Введите ваш email:")
+    await message.reply("✒️ Введите ваш email:")
     await state.set_state("enter_email")
 
 
@@ -76,7 +80,7 @@ async def start_promo_code_input(callback_query: types.CallbackQuery, state: FSM
     """
     logger.info(f"Начало ввода промокода. Текущее состояние FSM: {await state.get_state()}")
 
-    await callback_query.message.reply("Пожалуйста, введите ваш промокод:")
+    await callback_query.message.reply("✒️ Пожалуйста, введите ваш промокод:")
     await state.set_state("enter_promo_code")
 
 
@@ -89,12 +93,11 @@ async def enter_promo_code(message: types.Message, state: FSMContext):
     await state.update_data(promo_code=message.text.strip())
     logger.info(f"Состояние после ввода промокода: {await state.get_data()}")
 
-    # Переход к завершению ввода данных
     await message.reply(
-        "✅ Промокод успешно сохранён! Завершите ввод данных.",
-        reply_markup=create_finish_contact_keyboard()
+        "Теперь выберите мессенджер для связи:",
+        reply_markup=create_messengers_keyboard()
     )
-    await state.set_state("finish_contact_input")
+    await state.set_state("select_messenger_stage")
 
 
 @router.callback_query(lambda c: c.data == "skip_promo_code")
@@ -104,7 +107,25 @@ async def skip_promo_code(callback_query: types.CallbackQuery, state: FSMContext
     """
     logger.info("Промокод пропущен.")
     await callback_query.message.reply(
-        "Вы пропустили ввод промокода. Завершите ввод данных.",
+        "Вы пропустили ввод промокода. Теперь выберите мессенджер для связи:",
+        reply_markup=create_messengers_keyboard()
+    )
+    await state.set_state("select_messenger_stage")
+
+
+# === Обработчики выбора мессенджеров ===
+
+@router.callback_query(lambda c: c.data.startswith("messenger:"))
+async def select_messenger(callback_query: types.CallbackQuery, state: FSMContext):
+    """
+    Сохраняет выбранный мессенджер.
+    """
+    messenger = callback_query.data.split(":")[1]
+    logger.info(f"Выбранный мессенджер: {messenger}")
+    await state.update_data(messenger=messenger)
+    logger.info(f"Состояние после выбора мессенджера: {await state.get_data()}")
+    await callback_query.message.reply(
+        "✅ Мессенджер сохранён! Завершите ввод данных.",
         reply_markup=create_finish_contact_keyboard()
     )
     await state.set_state("finish_contact_input")
@@ -130,16 +151,41 @@ async def finish_contact_input(callback_query: types.CallbackQuery, state: FSMCo
         )
         return
 
+    messenger = user_data.get("messenger", "Не выбран")
     promo_code = user_data.get("promo_code", "Промокод отсутствует")
     await callback_query.message.edit_text(
         f"✅ Контактные данные успешно сохранены:\n\n"
         f"Имя: {user_data['name']}\n"
         f"Телефон: {user_data['phone']}\n"
         f"Email: {user_data['email']}\n"
+        f"Мессенджер: {messenger}\n"
         f"Промокод: {promo_code}",
         reply_markup=create_finish_keyboard()
     )
     await state.clear()
 
 
+# === Финальное завершение бронирования ===
 
+@router.callback_query(lambda c: c.data == "finalize_booking")
+async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContext):
+    """
+    Завершение процесса бронирования.
+    """
+    logger.info("Обработчик finalize_booking вызван.")
+    user_data = await state.get_data()
+    logger.info(f"Данные для бронирования: {user_data}")
+
+    async with ClientSession() as session:
+        try:
+            async with session.post(f"{API_URL}/create-booking/", json=user_data) as response:
+                if response.status == 201:
+                    await callback_query.message.edit_text("🎉 Ваше бронирование успешно завершено!")
+                    logger.info("Бронирование завершено успешно.")
+                else:
+                    logger.error(f"Ошибка при создании бронирования. Статус: {response.status}")
+                    await callback_query.message.reply("⚠️ Произошла ошибка. Попробуйте позже.")
+        except Exception as e:
+            logger.error(f"Ошибка соединения с сервером: {e}")
+            await callback_query.message.reply("❌ Не удалось завершить бронирование.")
+    await state.clear()

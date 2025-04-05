@@ -20,7 +20,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('booking/', include('booking.urls')),  # если у booking есть свои URL
+    path('api/booking/', include('booking.urls')),  # если у booking есть свои URL
     path('bot/', include('bot.urls')),          # для webhook бота (если используется)
 ]
 

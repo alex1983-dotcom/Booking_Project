@@ -9,22 +9,38 @@ class SpaceSerializer(serializers.ModelSerializer):
         model = Space
         fields = '__all__'
 
+
 class BookingSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели Booking.
     """
+    promo_code = serializers.CharField(
+        source='contact.promo_code', 
+        read_only=True
+    )  # Промокод подтягивается из связанной модели Feedback
+
+    def validate(self, data):
+        """
+        Проверка на валидность дат.
+        """
+        if data['event_start_date'] >= data['event_end_date']:
+            raise serializers.ValidationError(
+                "Дата начала должна быть раньше даты окончания."
+            )
+        return data
+
     class Meta:
         model = Booking
         fields = [
             'space',
             'event_start_date',
             'event_end_date',
-            'event_format',
             'guests_count',
             'preferences',
-            'promo_code',
-            'contact_method'
+            'contact',
+            'promo_code',  # Read-only поле
         ]
+
 
 class PreferenceSerializer(serializers.ModelSerializer):
     """
@@ -35,8 +51,12 @@ class PreferenceSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
 class FeedbackSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Feedback.
+    """
+    id = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Feedback
         fields = ['id', 'name', 'phone_number', 'email', 'promo_code', 'messengers']

@@ -7,14 +7,13 @@ from ..keyboards import create_halls_keyboard
 
 router = Router()
 
-# ======================= Обработчик ввода количества гостей ====================
 @router.message(StateFilter("enter_guests"))
 async def process_guests_input(message: types.Message, state: FSMContext):
     """
     Обработчик ввода количества гостей, проверки параметров и запроса доступных залов.
     """
     try:
-        # Проверяем ввод количества гостей
+        # Проверка на корректность ввода количества гостей
         guests_count = int(message.text.strip())
         if guests_count <= 0:
             raise ValueError("Количество гостей должно быть положительным числом.")
@@ -22,68 +21,60 @@ async def process_guests_input(message: types.Message, state: FSMContext):
         await message.reply("⚠️ Пожалуйста, введите корректное количество гостей (положительное целое число).")
         return
 
-    # Сохраняем количество гостей в состоянии
+    # Сохраняем количество гостей в FSM
     await state.update_data(guests_count=guests_count)
     user_data = await state.get_data()
+    logger.info(f"Текущее состояние данных пользователя: {user_data}")
 
     try:
-        # Получение параметров даты и времени
-        start_month = int(user_data.get("start_month", 0))
-        end_month = int(user_data.get("end_month", 0))
-        start_hour = int(user_data.get("start_hour", 0))
-        end_hour = int(user_data.get("end_hour", 0))
-        start_minute = int(user_data.get("start_minute", 0))
-        end_minute = int(user_data.get("end_minute", 0))
+        # Формируем параметры времени для запроса
+        start_datetime = f"{user_data['start_year']}-{int(user_data['start_month']):02}-{int(user_data['start_day']):02} {int(user_data['start_hour']):02}:{int(user_data['start_minute']):02}"
+        end_datetime = f"{user_data['end_year']}-{int(user_data['end_month']):02}-{int(user_data['end_day']):02} {int(user_data['end_hour']):02}:{int(user_data['end_minute']):02}"
 
-        # Проверка корректности месяца
-        if not (1 <= start_month <= 12) or not (1 <= end_month <= 12):
-            await message.reply("⚠️ Ошибка: Месяц должен быть в диапазоне 1–12. Проверьте введённые данные.")
-            return
+        logger.info(f"Параметры запроса: start={start_datetime}, end={end_datetime}, guests={guests_count}")
 
-        # Проверка корректности времени
-        if not (0 <= start_hour <= 23 and 0 <= end_hour <= 23 and 0 <= start_minute <= 59 and 0 <= end_minute <= 59):
-            await message.reply("⚠️ Ошибка: Часы должны быть в диапазоне 0–23, а минуты — 0–59. Проверьте введённые данные.")
-            return
-
-        # Формируем строки даты и времени
-        start_datetime = f"{user_data['start_year']}-{start_month:02}-{user_data['start_day']:02} {start_hour:02}:{start_minute:02}"
-        end_datetime = f"{user_data['end_year']}-{end_month:02}-{user_data['end_day']:02} {end_hour:02}:{end_minute:02}"
     except KeyError as e:
+        logger.error(f"Ошибка: отсутствует ключ {e} в состоянии данных.")
         await message.reply(f"⚠️ Ошибка: отсутствует ключ {e}. Пожалуйста, начните процесс заново с команды /start.")
-        logger.error(f"KeyError: отсутствует ключ {e} в состоянии пользователя.")
         return
-    except ValueError as e:
-        await message.reply(f"⚠️ Ошибка: неверный формат данных. {e}")
-        logger.error(f"ValueError: неверный формат данных. {e}")
+    except Exception as e:
+        logger.error(f"Ошибка при обработке данных: {e}")
+        await message.reply(f"⚠️ Произошла ошибка: {str(e)}")
         return
 
-    # Логируем параметры для отладки
-    logger.info(f"Параметры запроса: start={start_datetime}, end={end_datetime}, guests={guests_count}")
-
-    # Отправляем запрос к серверу
+    # Отправляем запрос на сервер для проверки доступных залов
     async with ClientSession() as session:
         try:
-            response = await session.get(f"{DJANGO_API_BASE_URL}check-availability/", params={
-                "start": start_datetime,
-                "end": end_datetime,
-                "guests": guests_count
-            })
+            response = await session.get(
+                f"{DJANGO_API_BASE_URL}check-availability/",
+                params={
+                    "start": start_datetime,
+                    "end": end_datetime,
+                    "guests": guests_count
+                }
+            )
 
             if response.status == 200:
-                # Обрабатываем успешный ответ от сервера
                 response_data = await response.json()
-                halls = response_data.get("spaces", [])
+                halls = response_data.get("data", {}).get("spaces", [])
+                logger.info(f"Найдены залы: {halls}")
+
                 if halls:
-                    await message.reply("🏢 Доступные залы найдены! Выберите один из них:", reply_markup=create_halls_keyboard(halls))
+                    await message.reply(
+                        "🏢 Доступные залы найдены! Выберите один из них:",
+                        reply_markup=create_halls_keyboard(halls)
+                    )
                     await state.set_state("hall_selection")
                 else:
+                    logger.warning("Нет доступных залов для указанных параметров.")
                     await message.reply("⚠️ Нет доступных залов для указанного времени. Попробуйте изменить параметры бронирования.")
             elif response.status == 400:
+                logger.warning(f"Некорректный запрос: статус 400. Параметры: start={start_datetime}, end={end_datetime}, guests={guests_count}")
                 await message.reply("⚠️ Некорректный запрос. Проверьте параметры и попробуйте снова.")
-                logger.warning(f"400 Bad Request. Параметры: start={start_datetime}, end={end_datetime}, guests={guests_count}")
             else:
-                await message.reply("⚠️ Произошла ошибка при проверке залов. Попробуйте позже.")
                 logger.error(f"Ошибка сервера: статус {response.status}. Параметры: start={start_datetime}, end={end_datetime}, guests={guests_count}")
+                await message.reply("⚠️ Произошла ошибка при проверке залов. Попробуйте позже.")
+
         except Exception as e:
-            await message.reply(f"❌ Ошибка соединения с сервером: {str(e)}")
             logger.error(f"Ошибка при отправке запроса: {str(e)}")
+            await message.reply(f"❌ Ошибка соединения с сервером: {str(e)}")

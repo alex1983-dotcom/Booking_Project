@@ -1,62 +1,55 @@
-from aiohttp import ClientSession
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
-from ..keyboards import create_preferences_keyboard
+from aiohttp import ClientSession
 from ..config import logger, DJANGO_API_BASE_URL
+from ..keyboards import create_preferences_keyboard
 
 router = Router()
 
-@router.callback_query(lambda c: c.data.startswith("hall:"))
-async def process_hall_selection(callback_query: types.CallbackQuery, state: FSMContext):
+async def fetch_preferences_from_db():
     """
-    Обработчик выбора зала.
+    Получение списка предпочтений из базы данных через API.
+    """
+    async with ClientSession() as session:
+        try:
+            async with session.get(f"{DJANGO_API_BASE_URL}get-preferences/") as response:
+                logger.info(f"HTTP статус ответа: {response.status}")
+                if response.status == 200:
+                    data = await response.json()
+                    logger.info(f"Полученные предпочтения от API: {data}")
+                    return data.get("data", {}).get("preferences", [])
+                else:
+                    logger.error(f"Ошибка при получении предпочтений: {response.status}")
+                    return []
+        except Exception as e:
+            logger.error(f"Ошибка при запросе предпочтений: {e}")
+            return []
+
+@router.callback_query(lambda c: c.data.startswith("hall:"))
+async def process_single_hall_selection(callback_query: types.CallbackQuery, state: FSMContext):
+    """
+    Обработчик выбора единственного зала с переходом к предпочтениям.
     """
     try:
-        # Извлечение ID выбранного зала из callback_data
-        hall_id = callback_query.data.split(":")[1]
-        await state.update_data(selected_hall=hall_id)
+        hall_id = int(callback_query.data.split(":")[1])
+        
+        # Сохраняем выбранный зал
+        selected_hall = {"id": hall_id, "name": f"Зал {hall_id}"}
+        await state.update_data(selected_hall=selected_hall)
 
-        # Запрос к API для получения предпочтений
-        async with ClientSession() as session:
-            response = await session.get(f"{DJANGO_API_BASE_URL}get-preferences/")
-            
-            # Проверяем статус ответа
-            if response.status == 200:
-                response_data = await response.json()  # Преобразуем JSON-строку в объект Python
-                
-                # Извлечение предпочтений
-                preferences = response_data.get("preferences", [])
-                
-                # Проверяем, что preferences — это список словарей
-                if not isinstance(preferences, list):
-                    raise ValueError("Данные preferences должны быть списком.")
-                
-                # Проверяем, что каждый элемент в списке — это словарь
-                if not all(isinstance(pref, dict) for pref in preferences):
-                    raise ValueError("Элементы preferences должны быть словарями.")
-                
-                # Генерация клавиатуры и вывод доступных предпочтений
-                await callback_query.message.edit_text(
-                    "Выберите дополнительные предпочтения:",
-                    reply_markup=create_preferences_keyboard(preferences)
-                )
+        logger.info(f"Выбранный зал: {selected_hall}")
+        await callback_query.message.reply(f"Вы выбрали зал: {selected_hall['name']}")
 
-                # Устанавливаем новое состояние
-                await state.set_state("preferences_selection")
-            else:
-                await callback_query.message.reply(
-                    "⚠️ Ошибка при получении данных о предпочтениях. Попробуйте позже."
-                )
-                logger.error(f"Ошибка API: статус {response.status}")
-    except ValueError as ve:
-        # Обработка ошибок связанных с типом данных
-        await callback_query.message.reply(f"⚠️ Ошибка: {str(ve)}")
-        logger.error(f"Ошибка данных: {str(ve)}")
-    except KeyError as ke:
-        # Обработка отсутствующих ключей
-        await callback_query.message.reply(f"⚠️ Ошибка: отсутствует ключ {str(ke)}.")
-        logger.error(f"Ошибка данных: отсутствует ключ {str(ke)}")
+        # Получаем список предпочтений через API
+        preferences = await fetch_preferences_from_db()
+
+        if preferences:
+            # Генерация клавиатуры с предпочтениями
+            keyboard = create_preferences_keyboard(preferences)
+            await callback_query.message.reply("Теперь выберите предпочтения:", reply_markup=keyboard)
+            await state.set_state("preference")
+        else:
+            await callback_query.message.reply("❌ Предпочтения недоступны. Попробуйте позже.")
     except Exception as e:
-        # Общая обработка ошибок
-        await callback_query.message.reply(f"❌ Произошла ошибка: {str(e)}")
-        logger.error(f"Неожиданная ошибка в process_hall_selection: {str(e)}")
+        logger.error(f"Ошибка при обработке выбора зала: {str(e)}")
+        await callback_query.answer("Произошла ошибка. Попробуйте позже.", show_alert=True)

@@ -1,11 +1,12 @@
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
-from ..keyboards import create_calendar, create_month_keyboard, create_year_keyboard, create_hour_keyboard, create_minute_keyboard
+from ..keyboards import create_month_keyboard, create_year_keyboard, create_hour_keyboard, create_minute_keyboard, create_calendar
 from ..config import logger
+
 
 router = Router()
 
-# Обработчики выбора даты начала мероприятия
+# Обработчик выбора дня начала
 @router.callback_query(lambda c: c.data.startswith("start_day:"))
 async def process_start_day(callback_query: types.CallbackQuery, state: FSMContext):
     day = callback_query.data.split(":")[1]
@@ -15,6 +16,7 @@ async def process_start_day(callback_query: types.CallbackQuery, state: FSMConte
     await state.set_state("select_start_month")
 
 
+# Обработчик выбора месяца начала
 @router.callback_query(lambda c: c.data.startswith("start_month:"))
 async def process_start_month(callback_query: types.CallbackQuery, state: FSMContext):
     month = callback_query.data.split(":")[1]
@@ -24,6 +26,7 @@ async def process_start_month(callback_query: types.CallbackQuery, state: FSMCon
     await state.set_state("select_start_year")
 
 
+# Обработчик выбора года начала
 @router.callback_query(lambda c: c.data.startswith("start_year:"))
 async def process_start_year(callback_query: types.CallbackQuery, state: FSMContext):
     year = callback_query.data.split(":")[1]
@@ -33,6 +36,7 @@ async def process_start_year(callback_query: types.CallbackQuery, state: FSMCont
     await state.set_state("select_start_hour")
 
 
+# Обработчик выбора часа начала
 @router.callback_query(lambda c: c.data.startswith("start_hour:"))
 async def process_start_hour(callback_query: types.CallbackQuery, state: FSMContext):
     hour = callback_query.data.split(":")[1]
@@ -42,6 +46,7 @@ async def process_start_hour(callback_query: types.CallbackQuery, state: FSMCont
     await state.set_state("select_start_minute")
 
 
+# Обработчик выбора минуты начала
 @router.callback_query(lambda c: c.data.startswith("start_minute:"))
 async def process_start_minute(callback_query: types.CallbackQuery, state: FSMContext):
     minute = callback_query.data.split(":")[1]

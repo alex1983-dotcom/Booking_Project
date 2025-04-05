@@ -24,14 +24,11 @@ async def finish_preferences_selection(callback_query: types.CallbackQuery, stat
     # Обновляем сообщение с итогами выбора
     await callback_query.message.edit_text(message)
 
-    # Переход к следующему этапу с кнопкой
-    await callback_query.message.reply(
-        "Теперь перейдём к вводу контактных данных.",
-        reply_markup=create_contact_input_keyboard()
-    )
+    # Переход к следующему этапу с кнопкой (без текста)
+    await callback_query.message.edit_reply_markup(reply_markup=create_contact_input_keyboard())
     
     # Устанавливаем состояние для ввода контактных данных
     await state.set_state("start_contact_input")
 
     # Логирование для отладки
-    logger.info("Переход к состоянию 'contact_input'.")
+    logger.info("Переход к состоянию 'start_contact_input'.")
