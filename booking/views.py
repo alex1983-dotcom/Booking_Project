@@ -169,15 +169,6 @@ class FeedbackAPIView(APIView):
         return create_error_response(serializer.errors)
     
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import AdditionalPreference
-from .serializers import PreferenceSerializer
-import logging
-
-logger = logging.getLogger(__name__)
-
 class PreferencesAPIView(APIView):
     """
     API для получения и обработки предпочтений.

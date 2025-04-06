@@ -57,42 +57,19 @@ class Booking(models.Model):
         AVAILABLE = 1, 'Свободно'
         BOOKED = 2, 'Забронировано'
 
-    space = models.ForeignKey(
-        'Space', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        verbose_name='Пространство'
-    )  # Обязательное поле, связанное с моделью Space
-    event_start_date = models.DateTimeField(
-        default=datetime.now, 
-        verbose_name='Дата начала'
-    )  # Обязательное поле, дата начала бронирования
-    event_end_date = models.DateTimeField(
-        verbose_name='Дата окончания'
-    )  # Обязательное поле, дата окончания бронирования
-    event_format = models.CharField(
-        max_length=100, 
-        verbose_name='Формат мероприятия',
-        blank=True, 
-        null=True 
-    )  # Обязательное поле, описание формата
-    guests_count = models.PositiveIntegerField(
-        verbose_name='Количество гостей'
-    )  # Обязательное поле, число гостей
-    preferences = models.ManyToManyField(
-        AdditionalPreference, 
-        blank=True, 
-        verbose_name='Дополнительные опции'
-    )  # Поле для дополнительных опций, не обязательное
-    created_at = models.DateTimeField(
-        auto_now_add=True, 
-        verbose_name='Дата создания'
-    )  # Поле с автоматической установкой даты создания
+    space = models.ForeignKey('Space', on_delete=models.SET_NULL, null=True, verbose_name='Пространство')  # Обязательное поле, связанное с моделью Space
+    event_start_date = models.DateTimeField(default=datetime.now, verbose_name='Дата начала')  # Обязательное поле, дата начала бронирования
+    event_end_date = models.DateTimeField(verbose_name='Дата окончания')  # Обязательное поле, дата окончания бронирования
+    event_format = models.CharField(max_length=100, verbose_name='Формат мероприятия',blank=True, null=True )  # Обязательное поле, описание формата
+    guests_count = models.PositiveIntegerField(verbose_name='Количество гостей')  # Обязательное поле, число гостей
+    preferences = models.ManyToManyField(AdditionalPreference, blank=True, verbose_name='Дополнительные опции')  # Поле для дополнительных опций, не обязательное
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')  # Поле с автоматической установкой даты создания
     status = models.IntegerField(
         choices=BookingStatus.choices,
         default=BookingStatus.AVAILABLE,
         verbose_name="Статус"
     )  # Поле статуса бронирования
+    
     contact = models.ForeignKey(
         Feedback,
         on_delete=models.SET_NULL,
