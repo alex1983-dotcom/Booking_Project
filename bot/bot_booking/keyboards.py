@@ -120,15 +120,6 @@ def create_contact_input_keyboard():
     ])
 
 
-def create_finish_contact_keyboard():
-    """
-    Клавиатура для завершения ввода контактных данных.
-    """
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Завершить ввод данных", callback_data="finish_contact_input")]
-    ])
-
-
 # === Промокод ===
 def create_promo_code_keyboard():
     """
@@ -163,6 +154,13 @@ def create_feedback_keyboard():
         [InlineKeyboardButton(text="💬 Мессенджер", callback_data="feedback:messenger")],
         [InlineKeyboardButton(text="🏷️ Промокод", callback_data="feedback:promo")],
         [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")],
+    ])
+def create_finish_contact_keyboard():
+    """
+    Клавиатура для завершения ввода контактных данных.
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Завершить ввод данных", callback_data="contact_input")]
     ])
 
 

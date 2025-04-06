@@ -13,13 +13,23 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
     try:
         # Получаем данные из FSM
         user_data = await state.get_data()
+        logger.info(f"Данные пользователя перед завершением: {user_data}")
 
         # Проверка обязательных данных
         required_keys = [
             "start_year", "start_month", "start_day", "start_hour", "start_minute",
-            "end_year", "end_month", "end_day", "end_hour", "end_minute",
-            "selected_hall", "preferences", "name", "phone", "guests_count", "email", "messenger"
+            "end_hour", "end_minute",
+            "event_end_date",  # Обязательно включить!
+            "guests_count",
+            "selected_hall", 
+            "preferences", 
+            "name", 
+            "phone", 
+            "email", 
+            "messenger",
+            "promo_code"
         ]
+
         missing_keys = [key for key in required_keys if key not in user_data or not user_data[key]]
         if missing_keys:
             logger.error(f"Пропущенные обязательные данные: {missing_keys}")
@@ -29,7 +39,7 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             )
             return
 
-        # Формирование дат в формате ISO 8601
+        # Формирование дат
         event_start_date = (
             f"{user_data['start_year']}-"
             f"{int(user_data['start_month']):02}-"
@@ -37,13 +47,16 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             f"{int(user_data['start_hour']):02}:"
             f"{int(user_data['start_minute']):02}:00Z"
         )
-        event_end_date = (
-            f"{user_data['end_year']}-"
-            f"{int(user_data['end_month']):02}-"
-            f"{int(user_data['end_day']):02}T"
-            f"{int(user_data['end_hour']):02}:"
-            f"{int(user_data['end_minute']):02}:00Z"
-        )
+
+        # Формируем `event_end_date` через `datetime` для корректного формата
+        from datetime import datetime
+        event_end_date = datetime(
+            year=int(user_data["start_year"]),  # Используем год начала
+            month=int(user_data["start_month"]),
+            day=int(user_data["start_day"]),
+            hour=int(user_data["end_hour"]),
+            minute=int(user_data["end_minute"])
+        ).isoformat(timespec="seconds") + "Z"
 
         # Формирование данных для сервера
         booking_data = {
@@ -58,7 +71,7 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             "messenger": user_data.get("messenger", "не указан")
         }
 
-        logger.info(f"Отправка данных на сервер: {booking_data}")
+        logger.info(f"Данные для отправки на сервер: {booking_data}")
 
         # Отправка данных на сервер
         async with ClientSession() as session:

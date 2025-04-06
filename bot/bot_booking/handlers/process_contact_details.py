@@ -128,64 +128,6 @@ async def select_messenger(callback_query: types.CallbackQuery, state: FSMContex
         "✅ Мессенджер сохранён! Завершите ввод данных.",
         reply_markup=create_finish_contact_keyboard()
     )
-    await state.set_state("finish_contact_input")
+    await state.set_state("contact_input")
 
 
-# === Обработчики завершения ввода данных ===
-
-@router.callback_query(lambda c: c.data == "finish_contact_input")
-async def finish_contact_input(callback_query: types.CallbackQuery, state: FSMContext):
-    """
-    Завершение ввода контактных данных.
-    """
-    logger.info(f"Текущее состояние FSM: {await state.get_state()}")
-
-    user_data = await state.get_data()
-    logger.info(f"Данные пользователя: {user_data}")
-
-    missing_fields = [field for field in ["name", "phone", "email"] if field not in user_data]
-
-    if missing_fields:
-        await callback_query.message.reply(
-            f"⚠️ Не все данные введены. Отсутствуют: {', '.join(missing_fields)}."
-        )
-        return
-
-    messenger = user_data.get("messenger", "Не выбран")
-    promo_code = user_data.get("promo_code", "Промокод отсутствует")
-    await callback_query.message.edit_text(
-        f"✅ Контактные данные успешно сохранены:\n\n"
-        f"Имя: {user_data['name']}\n"
-        f"Телефон: {user_data['phone']}\n"
-        f"Email: {user_data['email']}\n"
-        f"Мессенджер: {messenger}\n"
-        f"Промокод: {promo_code}",
-        reply_markup=create_finish_keyboard()
-    )
-    await state.clear()
-
-
-# === Финальное завершение бронирования ===
-
-@router.callback_query(lambda c: c.data == "finalize_booking")
-async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContext):
-    """
-    Завершение процесса бронирования.
-    """
-    logger.info("Обработчик finalize_booking вызван.")
-    user_data = await state.get_data()
-    logger.info(f"Данные для бронирования: {user_data}")
-
-    async with ClientSession() as session:
-        try:
-            async with session.post(f"{API_URL}/create-booking/", json=user_data) as response:
-                if response.status == 201:
-                    await callback_query.message.edit_text("🎉 Ваше бронирование успешно завершено!")
-                    logger.info("Бронирование завершено успешно.")
-                else:
-                    logger.error(f"Ошибка при создании бронирования. Статус: {response.status}")
-                    await callback_query.message.reply("⚠️ Произошла ошибка. Попробуйте позже.")
-        except Exception as e:
-            logger.error(f"Ошибка соединения с сервером: {e}")
-            await callback_query.message.reply("❌ Не удалось завершить бронирование.")
-    await state.clear()
