@@ -14,18 +14,27 @@ def create_calendar(prefix: str):
 
 
 # === Выбор месяца ===
-def create_month_keyboard(prefix: str):
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+def create_month_keyboard(prefix: str) -> InlineKeyboardMarkup:
     """
-    Создает клавиатуру для выбора месяца с уникальным префиксом для callback_data.
+    Создаёт клавиатуру для выбора месяца.
     """
-    months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-              'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
-    buttons = [
-        [InlineKeyboardButton(text=month, callback_data=f"{prefix}_month:{i + 1}") for i, month in enumerate(months[j:j + 4])]
-        for j in range(0, 12, 4)
+    months = [
+        ("Январь", 1), ("Февраль", 2), ("Март", 3), ("Апрель", 4),
+        ("Май", 5), ("Июнь", 6), ("Июль", 7), ("Август", 8),
+        ("Сентябрь", 9), ("Октябрь", 10), ("Ноябрь", 11), ("Декабрь", 12)
     ]
-    buttons.append([InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    # Создаём список кнопок
+    buttons = [
+        InlineKeyboardButton(text=name, callback_data=f"{prefix}_month:{value}")
+        for name, value in months
+    ]
+
+    # Формируем клавиатуру
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons[i:i+3] for i in range(0, len(buttons), 3)])
+    return keyboard
 
 
 # === Выбор года ===

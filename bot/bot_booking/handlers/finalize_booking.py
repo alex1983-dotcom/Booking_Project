@@ -68,7 +68,8 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             "client_contact": user_data["phone"],
             "guests_count": user_data["guests_count"],
             "email": user_data["email"],
-            "messenger": user_data.get("messenger", "не указан")
+            "messenger": user_data.get("messenger", "не указан"),
+            "promo_code": user_data.get("promo_code", None)  # Добавлено промокод
         }
 
         logger.info(f"Данные для отправки на сервер: {booking_data}")
