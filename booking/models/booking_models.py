@@ -97,6 +97,8 @@ class Booking(models.Model):
             raise ValidationError(
                 f"Количество гостей ({self.guests_count}) превышает вместимость пространства ({self.space.capacity})."
             )
+        
+        
 
 
 
