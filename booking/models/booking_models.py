@@ -33,7 +33,7 @@ class Feedback(models.Model):
 
     name = models.CharField(max_length=255, verbose_name='Имя')
     phone_number = models.CharField(max_length=20, verbose_name='Номер телефона')
-    email = models.EmailField(verbose_name='Электронная почта')
+    call_time = models.TimeField(verbose_name='Время звонка', default='12:00')
     promo_code = models.CharField(max_length=50, blank=True, null=True, verbose_name='Промокод')
     messengers = models.IntegerField(
         choices=Messenger.choices,
@@ -98,7 +98,7 @@ class Booking(models.Model):
                 f"Количество гостей ({self.guests_count}) превышает вместимость пространства ({self.space.capacity})."
             )
         
-        
+
 
 
 

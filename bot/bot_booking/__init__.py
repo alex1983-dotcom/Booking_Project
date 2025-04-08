@@ -11,6 +11,7 @@ from .keyboards import (
     create_hour_keyboard,
     create_minute_keyboard,
     create_halls_keyboard,
+    create_call_time_keyboard
 )
 
 # Экспортируем все зависимости
@@ -26,5 +27,6 @@ __all__ = [
     "create_minute_keyboard",
     "create_halls_keyboard",
     "routers",
-    "some_helper_function",  # Утилиты
+    "some_helper_function",
+    "create_call_time_keyboard"  
 ]

@@ -59,4 +59,4 @@ class FeedbackSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Feedback
-        fields = ['id', 'name', 'phone_number', 'email', 'promo_code', 'messengers']
+        fields = ['id', 'name', 'phone_number', 'call_time', 'promo_code', 'messengers']

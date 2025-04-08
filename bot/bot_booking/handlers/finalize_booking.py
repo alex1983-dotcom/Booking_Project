@@ -13,24 +13,17 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
     try:
         # Получаем данные из FSM
         user_data = await state.get_data()
-        logger.info(f"Данные пользователя перед завершением: {user_data}")
+        logger.info(f"Данные пользователя перед отправкой: {user_data}")
 
         # Проверка обязательных данных
         required_keys = [
             "start_year", "start_month", "start_day", "start_hour", "start_minute",
-            "end_hour", "end_minute",
-            "event_end_date",  # Обязательно включить!
-            "guests_count",
-            "selected_hall", 
-            "preferences", 
-            "name", 
-            "phone", 
-            "email", 
-            "messenger",
-            "promo_code"
+            "end_hour", "end_minute", "event_end_date",
+            "guests_count", "selected_hall", "preferences",
+            "name", "phone", "call_time", "messenger", "promo_code"
         ]
-
         missing_keys = [key for key in required_keys if key not in user_data or not user_data[key]]
+
         if missing_keys:
             logger.error(f"Пропущенные обязательные данные: {missing_keys}")
             await callback_query.answer(
@@ -39,26 +32,29 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             )
             return
 
-        # Формирование дат
+        # Проверка формата времени звонка (call_time)
+        call_time = user_data.get("call_time", None)
+        if ":" not in call_time:
+            # Форматируем время звонка
+            call_time = f"{call_time}:00:00"
+
+        # Формирование дат в формате ISO 8601
         event_start_date = (
             f"{user_data['start_year']}-"
             f"{int(user_data['start_month']):02}-"
             f"{int(user_data['start_day']):02}T"
-            f"{int(user_data['start_hour']):02}:"
-            f"{int(user_data['start_minute']):02}:00Z"
+            f"{int(user_data['start_hour']):02}:{int(user_data['start_minute']):02}:00Z"
         )
-
-        # Формируем `event_end_date` через `datetime` для корректного формата
         from datetime import datetime
         event_end_date = datetime(
-            year=int(user_data["start_year"]),  # Используем год начала
+            year=int(user_data["start_year"]),
             month=int(user_data["start_month"]),
             day=int(user_data["start_day"]),
             hour=int(user_data["end_hour"]),
             minute=int(user_data["end_minute"])
         ).isoformat(timespec="seconds") + "Z"
 
-        # Формирование данных для сервера
+        # Формирование JSON для отправки на сервер
         booking_data = {
             "event_start_date": event_start_date,
             "event_end_date": event_end_date,
@@ -66,10 +62,10 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             "preferences": [pref["id"] for pref in user_data.get("preferences", [])],
             "client_name": user_data["name"],
             "client_contact": user_data["phone"],
+            "call_time": call_time,  # Преобразованное время звонка
             "guests_count": user_data["guests_count"],
-            "email": user_data["email"],
             "messenger": user_data.get("messenger", "не указан"),
-            "promo_code": user_data.get("promo_code", None)  # Добавлено промокод
+            "promo_code": user_data.get("promo_code", None)
         }
 
         logger.info(f"Данные для отправки на сервер: {booking_data}")
@@ -84,11 +80,11 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
                     error_text = await response.text()
                     logger.error(f"Ошибка от сервера: {response.status}. Текст ошибки: {error_text}")
                     await callback_query.answer(
-                        f"⚠️ Ошибка сервера. Код ошибки: {response.status}. Подробности: {error_text}",
+                        f"⚠️ Ошибка сервера. Код ошибки: {response.status}. Подробнее: {error_text}",
                         show_alert=True
                     )
                     return
 
     except Exception as e:
-        logger.error(f"Неожиданная ошибка при обработке бронирования: {e}")
+        logger.error(f"Неожиданная ошибка: {e}")
         await callback_query.answer("❌ Произошла ошибка. Попробуйте позже или обратитесь в поддержку.", show_alert=True)

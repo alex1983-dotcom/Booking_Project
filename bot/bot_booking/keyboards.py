@@ -129,6 +129,32 @@ def create_contact_input_keyboard():
     ])
 
 
+
+#===== Время звонка =======
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+def create_call_time_keyboard() -> InlineKeyboardMarkup:
+    """
+    Создаёт клавиатуру для выбора времени звонка.
+    """
+    buttons = []  # Список кнопок
+    for hour in range(9, 22):  # Время с 9 до 21
+        time_text = f"{str(hour).zfill(2)}:00"  # Пример: 09:00, 10:00...
+        buttons.append(
+            InlineKeyboardButton(
+                text=time_text,
+                callback_data=f"call_time:{time_text}"  # Callback с временем
+            )
+        )
+
+    # Упаковка кнопок в строки по 4 кнопки
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[buttons[i:i + 4] for i in range(0, len(buttons), 4)]
+    )
+    return keyboard
+
+
+
 # === Промокод ===
 def create_promo_code_keyboard():
     """

@@ -24,7 +24,7 @@ async def finish_contact(callback_query: types.CallbackQuery, state: FSMContext)
         await state.update_data(promo_code=promo_code, messenger=messenger)
 
         # Проверка обязательных данных
-        required_fields = ["name", "phone", "email"]
+        required_fields = ["name", "phone", "call_time"]  # Изменено поле email на call_time
         missing_fields = [field for field in required_fields if not user_data.get(field)]
 
         if missing_fields:
@@ -39,7 +39,7 @@ async def finish_contact(callback_query: types.CallbackQuery, state: FSMContext)
             f"✅ Ваши данные успешно сохранены:\n\n"
             f"Имя: {user_data['name']}\n"
             f"Телефон: {user_data['phone']}\n"
-            f"Email: {user_data['email']}\n"
+            f"Время звонка: {user_data['call_time']}\n"  # Изменено на call_time
             f"Мессенджер: {messenger}\n"
             f"Промокод: {promo_code}\n\n"
             "Выберите дальнейшее действие:"
