@@ -82,7 +82,7 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             async with session.post(f"{DJANGO_API_BASE_URL}create-booking/", json=booking_data) as response:
                 if response.status == 201:
                     logger.info("Бронирование успешно создано на сервере.")
-                    await callback_query.answer("🎉 Бронирование успешно завершено!", show_alert=True)
+                    await callback_query.answer("🎉 Заявка принята! В ближайшее время мы Вам перезвоним!", show_alert=True)
                     await state.update_data(booking_finalized=True)  # Фиксируем успешное бронирование
                 else:
                     error_text = await response.text()
