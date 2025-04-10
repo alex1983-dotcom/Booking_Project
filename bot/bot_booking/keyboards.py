@@ -205,6 +205,6 @@ def create_finish_keyboard():
     Клавиатура для действий после завершения ввода данных.
     """
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Вернуться в меню", callback_data="main_menu")],
+        [InlineKeyboardButton(text="Вернуться в начало", callback_data="start")],
         [InlineKeyboardButton(text="Подтвердить заявку на бронирование", callback_data="finalize_booking")],
     ])

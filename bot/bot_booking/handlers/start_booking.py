@@ -29,3 +29,19 @@ async def start_booking(message: types.Message, state: FSMContext):
     # Инструкция для выбора даты начала
     await message.reply("Выберите день начала мероприятия: 🗓️", reply_markup=create_calendar("start"))
     await state.set_state("select_start_day")
+
+
+@router.callback_query(lambda c: c.data == "start")
+async def return_to_start(callback_query: types.CallbackQuery, state: FSMContext):
+    """
+    Обработчик кнопки "Вернуться к началу".
+    """
+    logger.info("Пользователь вернулся к началу.")
+    
+    # Сбрасываем состояние FSM
+    await state.clear()
+    logger.info("Состояние FSM сброшено.")
+    
+    # Вызываем функцию start_booking для перезапуска
+    from ..handlers.start_booking import start_booking
+    await start_booking(callback_query.message, state)
