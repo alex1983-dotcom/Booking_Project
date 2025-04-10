@@ -206,5 +206,5 @@ def create_finish_keyboard():
     """
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Вернуться в меню", callback_data="main_menu")],
-        [InlineKeyboardButton(text="Продолжить бронирование", callback_data="finalize_booking")],
+        [InlineKeyboardButton(text="Подтвердить заявку на бронирование", callback_data="finalize_booking")],
     ])
