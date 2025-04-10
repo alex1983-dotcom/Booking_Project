@@ -12,7 +12,15 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
     """
     try:
         # Получаем данные из FSM
-        user_data = await state.get_data()
+        state_data = await state.get_data()
+
+        # Проверяем, была ли заявка уже отправлена
+        if state_data.get("booking_finalized"):
+            await callback_query.answer("✅ Заявка на бронирование уже подтверждена.", show_alert=True)
+            logger.info("Попытка повторного подтверждения бронирования.")
+            return
+
+        user_data = state_data
         logger.info(f"Данные пользователя перед отправкой: {user_data}")
 
         # Проверка обязательных данных
@@ -35,8 +43,7 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
         # Проверка формата времени звонка (call_time)
         call_time = user_data.get("call_time", None)
         if ":" not in call_time:
-            # Форматируем время звонка
-            call_time = f"{call_time}:00:00"
+            call_time = f"{call_time}:00:00"  # Форматируем время звонка
 
         # Формирование дат в формате ISO 8601
         event_start_date = (
@@ -62,7 +69,7 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             "preferences": [pref["id"] for pref in user_data.get("preferences", [])],
             "client_name": user_data["name"],
             "client_contact": user_data["phone"],
-            "call_time": call_time,  # Преобразованное время звонка
+            "call_time": call_time,
             "guests_count": user_data["guests_count"],
             "messenger": user_data.get("messenger", "не указан"),
             "promo_code": user_data.get("promo_code", None)
@@ -76,6 +83,7 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
                 if response.status == 201:
                     logger.info("Бронирование успешно создано на сервере.")
                     await callback_query.answer("🎉 Бронирование успешно завершено!", show_alert=True)
+                    await state.update_data(booking_finalized=True)  # Фиксируем успешное бронирование
                 else:
                     error_text = await response.text()
                     logger.error(f"Ошибка от сервера: {response.status}. Текст ошибки: {error_text}")
