@@ -47,8 +47,8 @@ class CheckAvailabilityAPIView(APIView):
 
             logger.info(f"Полученные параметры: start={start}, end={end}, guests={guests}")
 
-            if not start or not end or not guests:
-                return create_error_response("Параметры 'start', 'end' и 'guests' обязательны.")
+            if not start or not end:
+                return create_error_response("Параметры 'start' и 'end' обязательны.")
 
             start_date = validate_date(start)
             end_date = validate_date(end)
@@ -56,16 +56,11 @@ class CheckAvailabilityAPIView(APIView):
             if start_date >= end_date:
                 return create_error_response("Дата начала должна быть раньше даты окончания.")
 
-            guests_count = int(guests)
-            if guests_count <= 0:
-                return create_error_response("Количество гостей должно быть положительным числом.")
-
-            available_spaces = Space.objects.filter(
-                capacity__gte=guests_count
-            ).exclude(
+            # Удаляем фильтр по вместимости залов (capacity__gte)
+            available_spaces = Space.objects.exclude(
                 booking__event_start_date__lt=end_date,
                 booking__event_end_date__gt=start_date
-            )
+            ).distinct()
 
             logger.info(f"Найдено {available_spaces.count()} доступных пространств.")
             serializer = SpaceSerializer(available_spaces, many=True)
@@ -76,6 +71,7 @@ class CheckAvailabilityAPIView(APIView):
         except Exception as e:
             logger.error(f"Ошибка сервера: {str(e)}")
             return create_error_response(f"Ошибка сервера: {str(e)}", status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 # === Эндпоинты для управления бронированием ===

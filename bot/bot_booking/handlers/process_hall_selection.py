@@ -8,7 +8,7 @@ router = Router()
 
 async def fetch_preferences_from_db():
     """
-    Получение списка предпочтений из базы данных через API.
+    Получение списка опций из базы данных через API.
     """
     async with ClientSession() as session:
         try:
