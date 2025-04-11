@@ -26,6 +26,7 @@ venv/
 myenv/
 booking_venv/
 
+
 # VS Code
 .vscode/
 
@@ -48,3 +49,5 @@ dist/
 # Результаты тестов и покрытия
 .coverage
 htmlcov/
+
+.env
