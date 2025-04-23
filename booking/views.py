@@ -75,7 +75,6 @@ class CheckAvailabilityAPIView(APIView):
 
 
 # === Эндпоинты для управления бронированием ===
-
 class CreateBookingAPIView(APIView):
     """
     Создаёт бронирование с привязкой к контактам пользователя.
@@ -130,7 +129,6 @@ class CreateBookingAPIView(APIView):
 
 
 # === Эндпоинты для управления предпочтениями ===
-
 class PreferencesAPIView(APIView):
     """
     API для получения и обработки предпочтений.
@@ -170,7 +168,6 @@ class PreferencesAPIView(APIView):
 
 
 # === Эндпоинты для обратной связи ===
-
 class FeedbackAPIView(APIView):
     """
     Обрабатывает обратную связь от клиентов.
