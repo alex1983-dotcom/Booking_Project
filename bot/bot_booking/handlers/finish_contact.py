@@ -24,7 +24,7 @@ async def finish_contact(callback_query: types.CallbackQuery, state: FSMContext)
         await state.update_data(promo_code=promo_code, messenger=messenger)
 
         # Проверка обязательных данных
-        required_fields = ["name", "phone", "call_time"]  # Изменено поле email на call_time
+        required_fields = ["name", "phone", "call_time"]
         missing_fields = [field for field in required_fields if not user_data.get(field)]
 
         if missing_fields:
