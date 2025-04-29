@@ -126,4 +126,34 @@ async def select_messenger(callback_query: types.CallbackQuery, state: FSMContex
     )
     await state.set_state("contact_input")
 
+@router.callback_query(lambda c: c.data == "skip_messenger")
+async def skip_messenger(callback_query: types.CallbackQuery, state: FSMContext):
+    """
+    Обработчик кнопки "Пропустить" при выборе мессенджера.
+    """
+    try:
+        # Логирование полученного callback_data
+        logger.info(f"Получен callback_data: {callback_query.data}")
 
+        # Логирование текущего состояния FSM
+        current_state = await state.get_state()
+        logger.info(f"Текущее состояние перед skip_messenger: {current_state}")
+
+        # Обновляем данные
+        await state.update_data(messenger="Не указан")
+
+        # Подтверждаем действие пользователю
+        await callback_query.answer("✅ Вы пропустили выбор мессенджера.")
+
+        # Меняем сообщение
+        await callback_query.message.edit_text(
+            "✅ Вы пропустили выбор мессенджера. Продолжайте ввод данных.",
+            reply_markup=create_finish_contact_keyboard()
+        )
+
+        # Устанавливаем следующее состояние
+        await state.set_state("contact_input")
+
+    except Exception as e:
+        logger.error(f"Ошибка при пропуске выбора мессенджера: {str(e)}")
+        await callback_query.answer("❌ Произошла ошибка. Попробуйте позже.", show_alert=True)
