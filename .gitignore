@@ -1,6 +1,9 @@
 # Игнорировать папку конфигурации PyCharm
 PeopleProject/.idea/
 
+# Игнорировать настройки IDE
+.idea/
+
 # Игнорировать файлы миграций
 */migrations/*.pyc
 # Ignore Python cache files
