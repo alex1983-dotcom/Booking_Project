@@ -21,6 +21,7 @@ class Feedback(models.Model):
     Модель для обратной связи (контакты для связи заказчика).
     """
     class Messenger(models.IntegerChoices):
+        NOT_SPECIFIED = 0, 'Не указан'  # Добавляем значение по умолчанию
         VIBER = 1, 'Viber'
         TELEGRAM = 2, 'Telegram'
         WHATSAPP = 3, 'WhatsApp'
@@ -31,7 +32,9 @@ class Feedback(models.Model):
     promo_code = models.CharField(max_length=50, blank=True, null=True, verbose_name='Промокод')
     messengers = models.IntegerField(
         choices=Messenger.choices,
-        default=Messenger.VIBER,
+        null=False,  # Запрещаем null, чтобы всегда было значение
+        blank=False,  # Запрещаем пустые строки
+        default=Messenger.NOT_SPECIFIED,  # Используем 0 для "Не указан"
         verbose_name="Мессенджер"
     )
 
