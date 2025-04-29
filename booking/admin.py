@@ -27,7 +27,7 @@ class BookingAdmin(admin.ModelAdmin):
     form = BookingForm  # Подключаем пользовательскую форму
     list_display = ('id', 'space', 'created_at', 'contact', 'event_start_date', 'event_end_date', 'guests_count', 'status')
     search_fields = ('space__name', 'event_format')
-    list_filter = ('contact','event_start_date', 'status')
+    list_filter = ('event_start_date', 'status')
     filter_horizontal = ('preferences',)  # Интерфейс для выбора предпочтений
 
 @admin.register(PriceSpace)
