@@ -1,6 +1,7 @@
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
 from aiohttp import ClientSession
+from datetime import datetime
 from ..config import logger, DJANGO_API_BASE_URL
 
 router = Router()
@@ -40,10 +41,10 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             )
             return
 
-        # Проверка формата времени звонка (call_time)
+        # Форматируем call_time
         call_time = user_data.get("call_time", None)
         if ":" not in call_time:
-            call_time = f"{call_time}:00:00"  # Форматируем время звонка
+            call_time = f"{call_time}:00:00"
 
         # Формирование дат в формате ISO 8601
         event_start_date = (
@@ -52,7 +53,6 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             f"{int(user_data['start_day']):02}T"
             f"{int(user_data['start_hour']):02}:{int(user_data['start_minute']):02}:00Z"
         )
-        from datetime import datetime
         event_end_date = datetime(
             year=int(user_data["start_year"]),
             month=int(user_data["start_month"]),
@@ -60,6 +60,10 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             hour=int(user_data["end_hour"]),
             minute=int(user_data["end_minute"])
         ).isoformat(timespec="seconds") + "Z"
+
+        # **Исправление проблемы с messengers**
+        if user_data.get("messenger") == "Не указан":
+            user_data["messenger"] = 0  # Преобразуем в строку
 
         # Формирование JSON для отправки на сервер
         booking_data = {
@@ -71,7 +75,7 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
             "client_contact": user_data["phone"],
             "call_time": call_time,
             "guests_count": user_data["guests_count"],
-            "messenger": user_data.get("messenger", "не указан"),
+            "messenger": int(user_data.get("messenger")),
             "promo_code": user_data.get("promo_code", None)
         }
 
@@ -83,7 +87,7 @@ async def finalize_booking(callback_query: types.CallbackQuery, state: FSMContex
                 if response.status == 201:
                     logger.info("Бронирование успешно создано на сервере.")
                     await callback_query.answer("🎉 Заявка принята! В ближайшее время мы Вам перезвоним!", show_alert=True)
-                    await state.update_data(booking_finalized=True)  # Фиксируем успешное бронирование
+                    await state.update_data(booking_finalized=True)
                 else:
                     error_text = await response.text()
                     logger.error(f"Ошибка от сервера: {response.status}. Текст ошибки: {error_text}")

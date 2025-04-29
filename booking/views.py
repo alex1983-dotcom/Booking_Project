@@ -74,7 +74,7 @@ class CheckAvailabilityAPIView(APIView):
 
 
 
-# === Эндпоинты для управления бронированием ===
+
 class CreateBookingAPIView(APIView):
     """
     Создаёт бронирование с привязкой к контактам пользователя.
@@ -83,24 +83,26 @@ class CreateBookingAPIView(APIView):
         try:
             logger.info(f"Полученные данные: {request.data}")
 
-            # Преобразование мессенджера
+            # **Обработка мессенджера**
             messenger_mapping = {
                 "viber": Feedback.Messenger.VIBER,
                 "telegram": Feedback.Messenger.TELEGRAM,
                 "whatsapp": Feedback.Messenger.WHATSAPP
             }
 
-            messenger_value = messenger_mapping.get(
-                request.data.get("messenger", "viber").lower(),  # По умолчанию "viber"
-                Feedback.Messenger.VIBER
-            )
+            messenger_value = request.data.get("messenger", "не указан")
+
+            # Проверяем, является ли messenger строкой, прежде чем вызывать .lower()
+            if isinstance(messenger_value, str):
+                messenger_value = messenger_value.lower()
+
+            messenger_value = messenger_mapping.get(messenger_value, Feedback.Messenger.NOT_SPECIFIED)
             request.data["messengers"] = messenger_value
 
-            # Создание контакта (Feedback)
+            # **Создание контакта (Feedback)**
             feedback_data = {
                 "name": request.data.get("client_name"),
                 "phone_number": request.data.get("client_contact"),
-                "email": request.data.get("email"),
                 "promo_code": request.data.get("promo_code"),
                 "messengers": request.data.get("messengers")
             }
@@ -111,21 +113,21 @@ class CreateBookingAPIView(APIView):
                 logger.info(f"Контакт создан: {feedback_instance.id}")
             else:
                 logger.warning(f"Ошибка в данных контакта: {feedback_serializer.errors}")
-                return create_error_response(feedback_serializer.errors, status.HTTP_400_BAD_REQUEST)
+                return Response({"status": "error", "message": feedback_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Создание бронирования (Booking)
+            # **Создание бронирования (Booking)**
             booking_serializer = BookingSerializer(data=request.data)
             if booking_serializer.is_valid():
                 booking = booking_serializer.save(contact=feedback_instance)  # Привязка контакта к бронированию
                 logger.info(f"Бронирование создано: {booking.id}")
-                return create_success_response({"booking": booking_serializer.data}, status.HTTP_201_CREATED)
+                return Response({"status": "success", "booking": booking_serializer.data}, status=status.HTTP_201_CREATED)
             else:
                 logger.warning(f"Ошибка в данных бронирования: {booking_serializer.errors}")
-                return create_error_response(booking_serializer.errors, status.HTTP_400_BAD_REQUEST)
+                return Response({"status": "error", "message": booking_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             logger.error(f"Ошибка при создании бронирования: {str(e)}")
-            return create_error_response(f"Ошибка сервера: {str(e)}", status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"status": "error", "message": f"Ошибка сервера: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # === Эндпоинты для управления предпочтениями ===
