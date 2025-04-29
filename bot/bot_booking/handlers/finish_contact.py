@@ -20,7 +20,7 @@ async def finish_contact(callback_query: types.CallbackQuery, state: FSMContext)
 
         # Обработка отсутствующих значений
         promo_code = user_data.get("promo_code", "Не введён")
-        messenger = user_data.get("messenger", "Не выбран")
+        messenger = user_data.get("messenger", "Не указан")
         await state.update_data(promo_code=promo_code, messenger=messenger)
 
         # Проверка обязательных данных
