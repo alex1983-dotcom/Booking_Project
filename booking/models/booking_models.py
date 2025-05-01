@@ -28,7 +28,7 @@ class Feedback(models.Model):
 
     name = models.CharField(max_length=255, verbose_name='Имя')
     phone_number = models.CharField(max_length=20, verbose_name='Номер телефона')
-    call_time = models.TimeField(verbose_name='Время звонка', default='12:00')
+    call_time = models.TimeField(verbose_name='Время звонка')
     promo_code = models.CharField(max_length=50, blank=True, null=True, verbose_name='Промокод')
     messengers = models.IntegerField(
         choices=Messenger.choices,

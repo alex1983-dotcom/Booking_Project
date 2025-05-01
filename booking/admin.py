@@ -40,7 +40,9 @@ class PriceSpaceAdmin(admin.ModelAdmin):
 @admin.register(Feedback)
 class FeedbackAdmin(admin.ModelAdmin):
     form = FeedbackAdminForm  
-    list_display = ('id', 'name', 'phone_number', 'promo_code', 'call_time')  # Настройка отображения
-    search_fields = ('name', 'phone_number', 'promo_code', 'call_time')  # Поля для поиска
 
+    def get_messenger_display(self, obj):
+        return obj.get_messengers_display()
 
+    list_display = ('id', 'name', 'phone_number', 'promo_code', 'get_messenger_display', 'call_time')
+    search_fields = ('name', 'phone_number', 'promo_code', 'call_time')
