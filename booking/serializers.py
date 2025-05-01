@@ -56,6 +56,7 @@ class FeedbackSerializer(serializers.ModelSerializer):
     Сериализатор для модели Feedback.
     """
     id = serializers.IntegerField(read_only=True)
+    call_time = serializers.TimeField(allow_null=True, required=False)  # Разрешаем `null`
 
     class Meta:
         model = Feedback

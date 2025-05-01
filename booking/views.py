@@ -73,60 +73,61 @@ class CheckAvailabilityAPIView(APIView):
             return create_error_response(f"Ошибка сервера: {str(e)}", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
-
 class CreateBookingAPIView(APIView):
     """
-    Создаёт бронирование с привязкой к контактам пользователя.
+    API для создания бронирования с обработкой контактов пользователя.
     """
     def post(self, request):
         try:
             logger.info(f"Полученные данные: {request.data}")
 
-            # **Обработка мессенджера**
+            # --- Обработка messengers ---
             messenger_mapping = {
-                "viber": Feedback.Messenger.VIBER,
-                "telegram": Feedback.Messenger.TELEGRAM,
-                "whatsapp": Feedback.Messenger.WHATSAPP
+                1: Feedback.Messenger.VIBER,  # Исправлено: теперь ключи - числа
+                2: Feedback.Messenger.TELEGRAM,
+                3: Feedback.Messenger.WHATSAPP
             }
 
-            messenger_value = request.data.get("messenger", "не указан")
+            messenger_value = request.data.get("messenger")
 
-            # Проверяем, является ли messenger строкой, прежде чем вызывать .lower()
-            if isinstance(messenger_value, str):
-                messenger_value = messenger_value.lower()
+            # Проверяем тип перед обработкой
+            if messenger_value is None or not isinstance(messenger_value, int):
+                messenger_value = Feedback.Messenger.NOT_SPECIFIED  # Значение по умолчанию
 
-            messenger_value = messenger_mapping.get(messenger_value, Feedback.Messenger.NOT_SPECIFIED)
-            request.data["messengers"] = messenger_value
+            processed_messenger = messenger_mapping.get(messenger_value, Feedback.Messenger.NOT_SPECIFIED)  # Исправлено
 
-            # **Создание контакта (Feedback)**
+            logger.info(f"Обработанный messenger (финальное значение): {processed_messenger}")
+
+            # --- Создание контакта (Feedback) ---
             feedback_data = {
                 "name": request.data.get("client_name"),
                 "phone_number": request.data.get("client_contact"),
                 "promo_code": request.data.get("promo_code"),
-                "messengers": request.data.get("messengers")
+                "call_time": request.data.get("call_time"),
+                "messengers": processed_messenger  # Теперь значение корректное
             }
 
             feedback_serializer = FeedbackSerializer(data=feedback_data)
             if feedback_serializer.is_valid():
                 feedback_instance = feedback_serializer.save()
-                logger.info(f"Контакт создан: {feedback_instance.id}")
+                logger.info(f"Контакт успешно сохранён: ID {feedback_instance.id}")
             else:
                 logger.warning(f"Ошибка в данных контакта: {feedback_serializer.errors}")
                 return Response({"status": "error", "message": feedback_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-            # **Создание бронирования (Booking)**
+            # --- Создание бронирования (Booking) ---
+            request.data["contact"] = feedback_instance.id
             booking_serializer = BookingSerializer(data=request.data)
             if booking_serializer.is_valid():
-                booking = booking_serializer.save(contact=feedback_instance)  # Привязка контакта к бронированию
-                logger.info(f"Бронирование создано: {booking.id}")
+                booking_instance = booking_serializer.save()
+                logger.info(f"Бронирование успешно создано: ID {booking_instance.id}")
                 return Response({"status": "success", "booking": booking_serializer.data}, status=status.HTTP_201_CREATED)
             else:
                 logger.warning(f"Ошибка в данных бронирования: {booking_serializer.errors}")
                 return Response({"status": "error", "message": booking_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            logger.error(f"Ошибка при создании бронирования: {str(e)}")
+            logger.error(f"Ошибка при обработке запроса: {str(e)}")
             return Response({"status": "error", "message": f"Ошибка сервера: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
