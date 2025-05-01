@@ -150,9 +150,9 @@ class PreferencesAPIView(APIView):
         try:
             preference_data = request.data.get("preferences", [])
             if not preference_data:
-                return create_error_response("Данные предпочтений отсутствуют.", status.HTTP_400_BAD_REQUEST)
+                return create_error_response("Данные опций отсутствуют.", status.HTTP_400_BAD_REQUEST)
 
-            logger.info(f"Полученные предпочтения: {preference_data}")
+            logger.info(f"Полученные опции: {preference_data}")
 
             processed_preferences = []
             for pref in preference_data:
@@ -166,7 +166,7 @@ class PreferencesAPIView(APIView):
 
             return create_success_response({"processed_preferences": processed_preferences})
         except Exception as e:
-            logger.error(f"Ошибка при обработке предпочтений: {str(e)}")
+            logger.error(f"Ошибка при обработке опций : {str(e)}")
             return create_error_response(f"Ошибка сервера: {str(e)}", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
